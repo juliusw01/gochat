@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"chatserver/auth"
+	"chatserver/crypto"
 
 
 	"github.com/gorilla/websocket"
@@ -20,6 +21,8 @@ func main() {
 	http.HandleFunc("/ws", HandleConnections)
 	http.HandleFunc("/login", auth.LoginHandler)
 	http.HandleFunc("/register", auth.RegHandler)
+	http.HandleFunc("/upload/public-key", crypto.PublicKeyHandler)
+
 
 	go HandleMessages()
 

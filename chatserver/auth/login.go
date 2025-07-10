@@ -18,6 +18,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var user user.User
 	json.NewDecoder(r.Body).Decode(&user)
 
+	//TODO: Implement actual users
 	if user.Username == "Chek" && user.Password == "123456" {
 		tokenString, err := CreateToken(user.Username)
 		if err != nil {

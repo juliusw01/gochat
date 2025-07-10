@@ -36,7 +36,6 @@ func StartClient() {
 	if err != nil {
 		fmt.Println("User cannot be extracted from auth token", err)
 	}
-	username = "blub"
 
 	header := http.Header{}
 	header.Set("Authorization", "Bearer " + tokenString)
