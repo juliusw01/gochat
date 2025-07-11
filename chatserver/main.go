@@ -22,6 +22,7 @@ func main() {
 	http.HandleFunc("/login", auth.LoginHandler)
 	http.HandleFunc("/register", auth.RegHandler)
 	http.HandleFunc("/upload/public-key", crypto.PublicKeyHandler)
+	http.HandleFunc("/get/public-key", crypto.GetPublicKey)
 
 
 	go HandleMessages()

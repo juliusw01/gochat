@@ -2,9 +2,7 @@ package crypto
 
 import (
 	"chatserver/auth"
-	"encoding/base64"
-	"fmt"
-	"io"
+	"log"
 	"net/http"
 )
 
@@ -13,25 +11,22 @@ func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Missing authorization header")
+	err := auth.Authenticate(w, r)
+	if err != nil {
 		return
 	}
-	tokenString = tokenString[len("Bearer "):]
-	errr := auth.VerifyToken(tokenString)
-	if errr != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Invalid token")
+	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
+	if err != nil {
+		log.Fatalf("Error extracting username from AuthToken %v", err)
+	}
+	key := Key{username, "someKey"}
+	SavePublicKey(key)
+}
+
+func GetPublicKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	body, _ := io.ReadAll(r.Body)
-
-	b64Data := base64.StdEncoding.EncodeToString(body)
-	//fmt.Print(b64Data)
-	//TODO: extract the username from jwt and save the username + public key
 
 }

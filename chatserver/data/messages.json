@@ -1,110 +1,26 @@
 [
  {
   "username": "Chek",
-  "message": "Anyone there?",
+  "message": "Chek joined the chat.",
   "room": "general",
-  "sent": "0001-01-01T00:00:00Z"
+  "sent": "2025-07-11T23:22:55.106444+02:00"
+ },
+ {
+  "username": "Chek",
+  "message": "Hi",
+  "sent": "2025-07-11T23:23:05.105651+02:00",
+  "recipient": "Chek"
  },
  {
   "username": "Chek",
   "message": "Hello?",
   "room": "general",
-  "sent": "0001-01-01T00:00:00Z"
+  "sent": "2025-07-11T23:23:27.827196+02:00"
  },
  {
   "username": "Chek",
-  "message": "Hello?",
+  "message": "Anybody there?",
   "room": "general",
-  "sent": "0001-01-01T00:00:00Z"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T22:57:40.099209+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "room": "general",
-  "sent": "2025-07-10T22:57:46.153466+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hello?",
-  "room": "general",
-  "sent": "0001-01-01T00:00:00Z"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T22:58:25.907637+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "room": "general",
-  "sent": "2025-07-10T22:58:34.604995+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Anyone there?",
-  "room": "general",
-  "sent": "2025-07-10T22:58:46.454588+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hello?",
-  "room": "general",
-  "sent": "0001-01-01T00:00:00Z"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T23:00:40.377662+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "sent": "2025-07-10T23:01:11.578168+02:00",
-  "recipient": "Chek"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T23:08:32.876829+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "sent": "2025-07-10T23:08:42.074939+02:00",
-  "recipient": "Chek"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T23:09:29.32081+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "sent": "2025-07-10T23:09:37.553927+02:00",
-  "recipient": "Chek"
- },
- {
-  "username": "Chek",
-  "message": "Chek joined the chat.",
-  "room": "general",
-  "sent": "2025-07-10T23:15:55.550117+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Hi",
-  "sent": "2025-07-10T23:16:04.779499+02:00",
-  "recipient": "Chek"
+  "sent": "2025-07-11T23:23:35.35539+02:00"
  }
 ]

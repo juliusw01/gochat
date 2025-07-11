@@ -2,6 +2,8 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -44,9 +46,29 @@ func EncryptMessage(message string) string {
 		uploadPublicKeyToServer(publicKey)
 	}
 
-	//TODO: actually encrypt the message
+	aesKey := make([]byte, 32)
+	_, err = rand.Read(aesKey)
+	if err != nil {
+		log.Fatalf("Failed to generate random AES key %v", err)
+	}
+	block, err := aes.NewCipher(aesKey)
+	if err != nil {
+		log.Fatalf("Failed to create new AES key %v", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		log.Fatalf("Failed to create Galois Counter Mode %v", err)
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	_, err = rand.Read(nonce)
+	if err != nil {
+		log.Fatalf("Failed to generate nonce %v", err)
+	}
 
-	return "\nDone encrypting"
+	ciphertext := gcm.Seal(nonce, nonce, []byte(message), nil)
+	//encryptedAES := ""
+
+	return string(ciphertext)
 }
 
 func getOrCreatePassphraseFromKeychain() string {
