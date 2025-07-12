@@ -2,8 +2,11 @@ package crypto
 
 import (
 	"chatserver/auth"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,12 +18,27 @@ func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+
 	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
 	if err != nil {
 		log.Fatalf("Error extracting username from AuthToken %v", err)
+		http.Error(w, "Error extracting username from AuthToken", http.StatusInternalServerError)
 	}
-	key := Key{username, "someKey"}
-	SavePublicKey(key)
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, r.Body)
+	if err != nil {
+		log.Fatalf("Error retrieving public key from request %v", err)
+		http.Error(w, "Error retrieving public key from request", http.StatusInternalServerError)
+	}
+
+	pubKey := buf.String()
+
+	key := Key{username, pubKey}
+	err = SavePublicKey(key)
+	if err != nil {
+		log.Fatalf("Error saving public key %v", err)
+		http.Error(w, "Error saving public key", http.StatusInternalServerError)
+	}
 }
 
 func GetPublicKey(w http.ResponseWriter, r *http.Request) {

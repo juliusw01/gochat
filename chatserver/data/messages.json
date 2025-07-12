@@ -3,24 +3,12 @@
   "username": "Chek",
   "message": "Chek joined the chat.",
   "room": "general",
-  "sent": "2025-07-11T23:22:55.106444+02:00"
+  "sent": "2025-07-12T13:20:10.9603+02:00"
  },
  {
   "username": "Chek",
-  "message": "Hi",
-  "sent": "2025-07-11T23:23:05.105651+02:00",
+  "message": "Hello",
+  "sent": "2025-07-12T13:20:28.515257+02:00",
   "recipient": "Chek"
- },
- {
-  "username": "Chek",
-  "message": "Hello?",
-  "room": "general",
-  "sent": "2025-07-11T23:23:27.827196+02:00"
- },
- {
-  "username": "Chek",
-  "message": "Anybody there?",
-  "room": "general",
-  "sent": "2025-07-11T23:23:35.35539+02:00"
  }
 ]
