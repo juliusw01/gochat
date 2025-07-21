@@ -2,7 +2,6 @@ package crypto
 
 import (
 	"chatserver/auth"
-	"fmt"
 	"io"
 	"log"
 	"net/http"

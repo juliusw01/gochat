@@ -2,8 +2,6 @@ package crypto
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -23,10 +21,10 @@ const (
 	passwordLen = 32
 )
 
-func EncryptMessage(message string) string {
+func EncryptMessage(message string) (string, string, string) {
 
 	homeDir, err := os.UserHomeDir()
-	if err!= nil {
+	if err != nil {
 		fmt.Println(err)
 	}
 
@@ -46,29 +44,25 @@ func EncryptMessage(message string) string {
 		uploadPublicKeyToServer(publicKey)
 	}
 
-	aesKey := make([]byte, 32)
-	_, err = rand.Read(aesKey)
+	ciphertext, aesKey, nonce, err := EncryptAES(message)
 	if err != nil {
-		log.Fatalf("Failed to generate random AES key %v", err)
-	}
-	block, err := aes.NewCipher(aesKey)
-	if err != nil {
-		log.Fatalf("Failed to create new AES key %v", err)
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		log.Fatalf("Failed to create Galois Counter Mode %v", err)
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	_, err = rand.Read(nonce)
-	if err != nil {
-		log.Fatalf("Failed to generate nonce %v", err)
+		log.Fatalf("Could not AES encrypt message %w", err)
 	}
 
-	ciphertext := gcm.Seal(nonce, nonce, []byte(message), nil)
-	//encryptedAES := ""
+	encryptedAESKey := encryptAESKey(aesKey)
 
-	return string(ciphertext)
+	encodedCiphertext := base64.StdEncoding.EncodeToString(ciphertext)
+	encodedNonce := base64.StdEncoding.EncodeToString(nonce)
+	encodedAESKey := base64.StdEncoding.EncodeToString(encryptedAESKey)
+
+
+	return encodedCiphertext, encodedNonce, encodedAESKey
+
+}
+
+func encryptAESKey(aesKey []byte) []byte {
+	//TODO: Extract recipient's public key from server and use it to encrypt AES key here
+	return aesKey
 }
 
 func getOrCreatePassphraseFromKeychain() string {
@@ -118,7 +112,7 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey) {
 	}
 
 	homeDir, err := os.UserHomeDir()
-	if err!= nil {
+	if err != nil {
 		fmt.Println(err)
 	}
 	token, err := os.ReadFile(homeDir + "/.gochat/authToken.txt")
@@ -128,7 +122,7 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey) {
 	}
 	jwtToken := string(token)
 
-	req.Header.Set("Authorization", "Bearer " + jwtToken)
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
 	req.Header.Set("Content-Type", "application/x-pem-file")
 
 	client := &http.Client{}
@@ -141,5 +135,5 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey) {
 	if resp.StatusCode != http.StatusOK {
 		log.Fatalf("Server responded with status: %s", resp.Status)
 	}
-	
+
 }

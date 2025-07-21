@@ -3,12 +3,152 @@
   "username": "Chek",
   "message": "Chek joined the chat.",
   "room": "general",
-  "sent": "2025-07-12T13:20:10.9603+02:00"
+  "sent": "2025-07-22T00:01:37.908968+02:00"
  },
  {
   "username": "Chek",
+  "message": "FkDwI3CkfRyXy7WVY1LeLrx/JD9GDjOc/AsB94px",
+  "sent": "2025-07-22T00:02:04.451944+02:00",
+  "recipient": "Chek1",
+  "nonce": "FkDwI3CkfRyXy7WV",
+  "aesKey": "fpPsrKst8f/rgdC9IiOin+1zQchCTkv68FSUp2pBjzM="
+ },
+ {
+  "username": "Chek1",
   "message": "Hello",
-  "sent": "2025-07-12T13:20:28.515257+02:00",
+  "sent": "0001-01-01T00:00:00Z",
   "recipient": "Chek"
+ },
+ {
+  "username": "Chek1",
+  "message": "Hello",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek"
+ },
+ {
+  "username": "Chek",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "2025-07-22T00:02:50.140032+02:00",
+  "recipient": "Chek1",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "2025-07-22T00:02:50.140032+02:00",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "hi",
+  "room": "general",
+  "sent": "2025-07-22T00:47:20.593054+02:00"
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:23:28.583716+02:00"
+ },
+ {
+  "username": "Chek",
+  "message": "Hi",
+  "room": "general",
+  "sent": "2025-07-22T01:23:39.938549+02:00"
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:24:00.935528+02:00"
+ },
+ {
+  "username": "Chek",
+  "message": "Hi",
+  "room": "general",
+  "sent": "2025-07-22T01:24:07.529823+02:00"
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:26:08.27213+02:00"
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:35:06.681533+02:00"
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:45:32.534606+02:00"
+ },
+ {
+  "username": "Chek1",
+  "message": "oSVlU9qC2QwWdTDV6glxsr2peb2RbqmCLRnVgAq5",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "oSVlU9qC2QwWdTDV",
+  "aesKey": "YYlYV8dbDppVtF58sOPhduGEz2jdR0dPG2eEPhgkN7Y="
+ },
+ {
+  "username": "Chek",
+  "message": "Chek joined the chat.",
+  "room": "general",
+  "sent": "2025-07-22T01:49:01.930554+02:00"
+ },
+ {
+  "username": "Chek",
+  "message": "bd9JMJYfbRYh1hM4bpNrHU7V",
+  "sent": "2025-07-22T01:49:10.579324+02:00",
+  "recipient": "Chek1",
+  "nonce": "vH+kwS6pmkV3/Cyx",
+  "aesKey": "SGXouys1kB3XXKQIOAu/snGEcwIK8tKDW5P3Ip4N3h0="
+ },
+ {
+  "username": "Chek1",
+  "message": "bd9JMJYfbRYh1hM4bpNrHU7V",
+  "sent": "0001-01-01T00:00:00Z",
+  "recipient": "Chek",
+  "nonce": "vH+kwS6pmkV3/Cyx",
+  "aesKey": "SGXouys1kB3XXKQIOAu/snGEcwIK8tKDW5P3Ip4N3h0="
  }
 ]

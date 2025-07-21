@@ -3,6 +3,8 @@ package chat
 import (
 	"bufio"
 	"fmt"
+	"gochat/auth"
+	"gochat/crypto"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +12,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"gochat/auth"
 
 	"github.com/gorilla/websocket"
 )
@@ -23,7 +24,7 @@ var currentRoom string = "general"
 func StartClient() {
 	reader := bufio.NewReader(os.Stdin)
 	homeDir, err := os.UserHomeDir()
-	if err!= nil {
+	if err != nil {
 		fmt.Println(err)
 	}
 	token, err := os.ReadFile(homeDir + "/.gochat/authToken.txt")
@@ -38,7 +39,7 @@ func StartClient() {
 	}
 
 	header := http.Header{}
-	header.Set("Authorization", "Bearer " + tokenString)
+	header.Set("Authorization", "Bearer "+tokenString)
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", header)
 	if err != nil {
 		log.Fatal("Dial error:", err)
@@ -56,11 +57,16 @@ func StartClient() {
 				log.Println("Read error:", err)
 				return
 			}
+			messageText := msg.Message
 			received_in := msg.Room
 			if msg.Recipient != "" {
 				received_in = "dm"
+				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey)
+				if err != nil {
+					log.Fatalf("Message could not be decrypted %w", err)
+				}
 			}
-			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, msg.Message)
+			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText)
 		}
 	}()
 
@@ -85,13 +91,13 @@ func StartClient() {
 		text = strings.TrimSpace(text)
 
 		var i int
-		i, currentRoom = CheckPrefix(currentRoom, text, username, conn);
+		i, currentRoom = CheckPrefix(currentRoom, text, username, conn)
 		if i == 1 {
 			fmt.Println("\nDisconnected from server.")
 			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			conn.Close()
 			os.Exit(0)
-		}else if i == 0 {
+		} else if i == 0 {
 			continue
 		}
 
@@ -112,15 +118,15 @@ func StartClient() {
 
 func initMessage(conn *websocket.Conn, username string) {
 	msg := Message{
-			Username: username,
-			Message:  fmt.Sprintf("%s joined the chat.", username),
-			Room:     currentRoom,
-			Sent:     time.Now(),
-		}
+		Username: username,
+		Message:  fmt.Sprintf("%s joined the chat.", username),
+		Room:     currentRoom,
+		Sent:     time.Now(),
+	}
 
-		err := conn.WriteJSON(msg)
-		if err != nil {
-			log.Println("Write error:", err)
-			return
-		}
+	err := conn.WriteJSON(msg)
+	if err != nil {
+		log.Println("Write error:", err)
+		return
+	}
 }
