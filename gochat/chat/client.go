@@ -21,28 +21,33 @@ var currentRoom string = "general"
 
 //var roomsMutex sync.Mutex
 
-func StartClient() {
+func StartClient(user string) {
 	reader := bufio.NewReader(os.Stdin)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-	token, err := os.ReadFile(homeDir + "/.gochat/authToken.txt")
+	/**Username is passed as an argument to support multiple accounts on one client (primarily for testing purposes)
+	* Bad for user experience --> instead of 'gochat chat' username has to be passed too 'gochat chat -u Chek'
+	* TODO: Either remove multi user support or find a better way
+	**/
+	token, err := os.ReadFile(homeDir + "/.gochat/" + user + "/authToken.txt")
 	if err != nil {
-		fmt.Println("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first", err)
+		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %w", err)
 		return
 	}
 	tokenString := string(token)
+	//Eventhough we pass the username as an arg, we want to extract the username from the signed token
 	username, err := auth.ExtractUserFromToken(tokenString)
 	if err != nil {
-		fmt.Println("User cannot be extracted from auth token", err)
+		log.Fatalf("User cannot be extracted from auth token: %w", err)
 	}
 
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+tokenString)
 	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", header)
 	if err != nil {
-		log.Fatal("Dial error:", err)
+		log.Fatalf("Dial error: %w", err)
 	}
 	defer conn.Close()
 

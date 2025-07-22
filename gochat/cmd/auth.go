@@ -13,7 +13,7 @@ import (
 var authCmd = &cobra.Command{
 	Use:   "authenticate",
 	Short: "Authenticate yourself as a user with username & password to get an access token",
-	//Args:  cobra.MinimumNArgs(1),
+	//Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		username, err := cmd.Flags().GetString("username")
 		if err != nil {

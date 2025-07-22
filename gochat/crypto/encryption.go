@@ -21,14 +21,14 @@ const (
 	passwordLen = 32
 )
 
-func EncryptMessage(message string) (string, string, string) {
+func EncryptMessage(message string, username string) (string, string, string) {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	dir := homeDir + "/.gochat/private.pem"
+	dir := homeDir + "/.gochat/" + username + "/private.pem"
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = nil
