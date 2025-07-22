@@ -21,14 +21,14 @@ const (
 	passwordLen = 32
 )
 
-func EncryptMessage(message string, username string) (string, string, string) {
+func EncryptMessage(message string, user string) (string, string, string) {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	dir := homeDir + "/.gochat/" + username + "/private.pem"
+	dir := homeDir + "/.gochat/" + user + "/private.pem"
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = nil
@@ -41,7 +41,7 @@ func EncryptMessage(message string, username string) (string, string, string) {
 		encryptedPEM := encryptPrivateKeyToPEM(privateKey, passphrase)
 		os.WriteFile(dir, encryptedPEM, 0600)
 
-		uploadPublicKeyToServer(publicKey)
+		uploadPublicKeyToServer(publicKey, user)
 	}
 
 	ciphertext, aesKey, nonce, err := EncryptAES(message)
@@ -98,7 +98,7 @@ func encryptPrivateKeyToPEM(privateKey *rsa.PrivateKey, passphrase string) []byt
 	return pemData
 }
 
-func uploadPublicKeyToServer(publicKey *rsa.PublicKey) {
+func uploadPublicKeyToServer(publicKey *rsa.PublicKey, user string) {
 	keyBytes := x509.MarshalPKCS1PublicKey(publicKey)
 	pemBlock := &pem.Block{
 		Type:  "RSA PUBLIC KEY",
@@ -115,14 +115,14 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	token, err := os.ReadFile(homeDir + "/.gochat/authToken.txt")
+	token, err := os.ReadFile(homeDir + "/.gochat/" + user + "/authToken.txt")
 	if err != nil {
 		fmt.Println("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first", err)
 		return
 	}
 	jwtToken := string(token)
 
-	req.Header.Set("Authorization", "Bearer "+jwtToken)
+	req.Header.Set("Authorization", "Bearer " + jwtToken)
 	req.Header.Set("Content-Type", "application/x-pem-file")
 
 	client := &http.Client{}

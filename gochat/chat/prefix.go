@@ -42,11 +42,9 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 		recipient := parts[1]
 		message := parts[2]
 		encryptedMsg, nonce, aesKey := crypto.EncryptMessage(message, username)
-		fmt.Println(encryptedMsg)
 		msg := Message{
 			Username: username,
 			Message:  encryptedMsg,
-			//Message:   message,
 			Sent:      time.Now(),
 			Recipient: recipient,
 			Nonce:     nonce,

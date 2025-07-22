@@ -96,6 +96,7 @@ func StartClient(user string) {
 		text = strings.TrimSpace(text)
 
 		var i int
+		//TODO: Set fix prefix --> user has to set '/dm <user> <message>' every time. Treat dm's like chatrooms and save them. Prefix should only be specified when smth changes
 		i, currentRoom = CheckPrefix(currentRoom, text, username, conn)
 		if i == 1 {
 			fmt.Println("\nDisconnected from server.")
