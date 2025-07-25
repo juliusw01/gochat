@@ -55,7 +55,6 @@ func EncryptMessage(message string, user string) (string, string, string) {
 	encodedNonce := base64.StdEncoding.EncodeToString(nonce)
 	encodedAESKey := base64.StdEncoding.EncodeToString(encryptedAESKey)
 
-
 	return encodedCiphertext, encodedNonce, encodedAESKey
 
 }
@@ -106,7 +105,7 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey, user string) {
 	}
 	pemData := pem.EncodeToMemory(pemBlock)
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/upload/public-key", bytes.NewBuffer(pemData))
+	req, err := http.NewRequest("POST", "http://raspberrypi.fritz.box:8080/upload/public-key", bytes.NewBuffer(pemData))
 	if err != nil {
 		log.Fatalf("Failed to create request: %v", err)
 	}
@@ -122,7 +121,7 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey, user string) {
 	}
 	jwtToken := string(token)
 
-	req.Header.Set("Authorization", "Bearer " + jwtToken)
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
 	req.Header.Set("Content-Type", "application/x-pem-file")
 
 	client := &http.Client{}

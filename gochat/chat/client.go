@@ -45,7 +45,7 @@ func StartClient(user string) {
 
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+tokenString)
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", header)
+	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
 	if err != nil {
 		log.Fatalf("Dial error: %w", err)
 	}

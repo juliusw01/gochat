@@ -20,7 +20,7 @@ func UserLogin(username string, password string) {
 		log.Fatalf("Error encoding Json: %w", err)
 		return
 	}
-	resp, err := http.Post("http://localhost:8080/login", "application/json", bytes.NewBuffer(userJson))
+	resp, err := http.Post("http://raspberrypi.fritz.box:8080/login", "application/json", bytes.NewBuffer(userJson))
 	if err != nil {
 		log.Fatalf("Error making login request: %w", err)
 		return
