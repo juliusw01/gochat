@@ -2,9 +2,12 @@ package crypto
 
 import (
 	"chatserver/auth"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -46,4 +49,36 @@ func GetPublicKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := auth.Authenticate(w, r)
+	if err != nil {
+		return
+	}
+
+	recipient := r.PathValue("recipient")
+	_, s, _ := checkIfPubKeyExists(recipient)
+	w.Write([]byte(s))
+
+}
+
+func checkIfPubKeyExists(username string) (bool, string, error) {
+	// Read the JSON file
+	jsonKeys, err := os.ReadFile("data/publickey.json")
+	if err != nil {
+		return false, "", fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Unmarshal JSON into slice of Key
+	var keys []Key
+	if err := json.Unmarshal(jsonKeys, &keys); err != nil {
+		return false, "", fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	// Search for username
+	for _, k := range keys {
+		if k.Username == username {
+			return true, k.PublicKey, nil
+		}
+	}
+
+	return false, "", nil
 }

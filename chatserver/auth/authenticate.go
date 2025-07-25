@@ -6,6 +6,7 @@ import (
 )
 
 func Authenticate(w http.ResponseWriter, r *http.Request) error {
+	//TODO: make this method return username.
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
 		w.WriteHeader(http.StatusUnauthorized)
