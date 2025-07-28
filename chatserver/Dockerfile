@@ -25,9 +25,12 @@ FROM alpine:3.19
 
 WORKDIR /app
 COPY --from=builder /app/bin/chatserver .
+COPY homepage.txt ./
 
 RUN adduser -D appuser
 USER appuser
+
+EXPOSE 8080
 
 ENTRYPOINT ["./chatserver"]
 

@@ -1,0 +1,28 @@
+name: Pipeline to build and deploy chatserver to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: build image
+        run: |
+          cd chatserver
+          docker build -t chatserver:latest .
+          docker save chatserver:latest -o chatserver.tar
+
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Start image on Pi
+        run: |
+          mv chatserver.tar ../../../../gochat/images/chatserver.tar
+          docker load -i ../../../../gochat/images/chatserver.tar
+          docker run -d -p 8080:8080 chatserver:latest
