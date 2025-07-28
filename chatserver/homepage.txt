@@ -1,4 +1,4 @@
 Welcome to gochat
 
---> some documentation
+Start the gochat client to chat with other users in chatrooms or in 1:1 chats. The client can be downloaded at http://raspberrypi.fritz.box:8080/client
 
