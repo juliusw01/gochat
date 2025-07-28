@@ -3,14 +3,16 @@ package chat
 import (
 	"bufio"
 	"fmt"
+	"gochat/auth"
+	"gochat/crypto"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
-	"gochat/auth"
 
 	"github.com/gorilla/websocket"
 )
@@ -20,29 +22,34 @@ var currentRoom string = "general"
 
 //var roomsMutex sync.Mutex
 
-func StartClient() {
+func StartClient(user string) {
 	reader := bufio.NewReader(os.Stdin)
 	homeDir, err := os.UserHomeDir()
-	if err!= nil {
-		fmt.Println(err)
-	}
-	token, err := os.ReadFile(homeDir + "/.gochat/authToken.txt")
 	if err != nil {
-		fmt.Println("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first", err)
+		log.Fatal(err)
+	}
+	/**Username is passed as an argument to support multiple accounts on one client (primarily for testing purposes)
+	* Bad for user experience --> instead of 'gochat chat' username has to be passed too 'gochat chat -u Chek'
+	* TODO: Either remove multi user support or find a better way
+	**/
+	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
+	token, err := os.ReadFile(tokenDir)
+	if err != nil {
+		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %w", err)
 		return
 	}
 	tokenString := string(token)
+	//Eventhough we pass the username as an arg, we want to extract the username from the signed token
 	username, err := auth.ExtractUserFromToken(tokenString)
 	if err != nil {
-		fmt.Println("User cannot be extracted from auth token", err)
+		log.Fatalf("User cannot be extracted from auth token: %w", err)
 	}
-	username = "blub"
 
 	header := http.Header{}
-	header.Set("Authorization", "Bearer " + tokenString)
-	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws", header)
+	header.Set("Authorization", "Bearer "+tokenString)
+	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
 	if err != nil {
-		log.Fatal("Dial error:", err)
+		log.Fatalf("Dial error: %w", err)
 	}
 	defer conn.Close()
 
@@ -57,11 +64,16 @@ func StartClient() {
 				log.Println("Read error:", err)
 				return
 			}
+			messageText := msg.Message
 			received_in := msg.Room
 			if msg.Recipient != "" {
 				received_in = "dm"
+				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
+				if err != nil {
+					log.Fatalf("Message could not be decrypted %w", err)
+				}
 			}
-			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, msg.Message)
+			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText)
 		}
 	}()
 
@@ -86,13 +98,14 @@ func StartClient() {
 		text = strings.TrimSpace(text)
 
 		var i int
-		i, currentRoom = CheckPrefix(currentRoom, text, username, conn);
+		//TODO: Set fix prefix --> user has to set '/dm <user> <message>' every time. Treat dm's like chatrooms and save them. Prefix should only be specified when smth changes
+		i, currentRoom = CheckPrefix(currentRoom, text, username, conn)
 		if i == 1 {
 			fmt.Println("\nDisconnected from server.")
 			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			conn.Close()
 			os.Exit(0)
-		}else if i == 0 {
+		} else if i == 0 {
 			continue
 		}
 
@@ -113,15 +126,15 @@ func StartClient() {
 
 func initMessage(conn *websocket.Conn, username string) {
 	msg := Message{
-			Username: username,
-			Message:  fmt.Sprintf("%s joined the chat.", username),
-			Room:     currentRoom,
-			Sent:     time.Now(),
-		}
+		Username: username,
+		Message:  fmt.Sprintf("%s joined the chat.", username),
+		Room:     currentRoom,
+		Sent:     time.Now(),
+	}
 
-		err := conn.WriteJSON(msg)
-		if err != nil {
-			log.Println("Write error:", err)
-			return
-		}
+	err := conn.WriteJSON(msg)
+	if err != nil {
+		log.Println("Write error:", err)
+		return
+	}
 }

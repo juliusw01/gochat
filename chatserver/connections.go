@@ -29,8 +29,8 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenString = tokenString[len("Bearer "):]
-	errr := auth.VerifyToken(tokenString)
-	if errr != nil {
+	err := auth.VerifyToken(tokenString)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprint(w, "Invalid token")
 		return

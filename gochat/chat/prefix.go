@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"gochat/crypto"
 	"strings"
 	"time"
 
@@ -35,18 +36,22 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 	if strings.HasPrefix(text, "/dm") {
 		parts := strings.SplitN(text, " ", 3)
 		if len(parts) < 3 {
-			fmt.Println("Usage: /dm <username> <message>")
+			fmt.Println("Usage: /dm <receipient> <message>")
 			return 0, currentRoom
 		}
 		recipient := parts[1]
 		message := parts[2]
+		encryptedMsg, nonce, aesKey := crypto.EncryptMessage(message, username, recipient)
 		msg := Message{
-			Username:  username,
-			Message:   message,
+			Username: username,
+			Message:  encryptedMsg,
 			Sent:      time.Now(),
 			Recipient: recipient,
+			Nonce:     nonce,
+			AESKey:    aesKey,
 		}
 		conn.WriteJSON(msg)
+		//TODO: return recipient here and save in variable in client.go to make it "persistent" like currentRoom
 		return 0, currentRoom
 	}
 	return -1, currentRoom

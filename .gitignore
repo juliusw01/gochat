@@ -1,0 +1,9 @@
+
+chatserver/data/messages.json
+chatserver/data/publickey.json
+chatserver/data/users.json
+gochat/test/gochat
+gochat/test/.DS_Store
+gochat/.DS_Store
+chatserver/chatserver
+.DS_Store

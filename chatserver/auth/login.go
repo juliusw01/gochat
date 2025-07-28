@@ -18,7 +18,17 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var user user.User
 	json.NewDecoder(r.Body).Decode(&user)
 
+	//TODO: Implement actual users
 	if user.Username == "Chek" && user.Password == "123456" {
+		tokenString, err := CreateToken(user.Username)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Errorf("No username found")
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, tokenString)
+		return
+	} else if user.Username == "Chek1" && user.Password == "123456" {
 		tokenString, err := CreateToken(user.Username)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

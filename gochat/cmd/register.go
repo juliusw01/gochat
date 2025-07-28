@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"gochat/auth"
+	"log"
+
 	//"net/http"
 
 	//"github.com/gorilla/websocket"
-	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -13,15 +14,15 @@ import (
 var regCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Register a new user to start chatting",
-	//Args:  cobra.MinimumNArgs(1),
+	//Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		username, err := cmd.Flags().GetString("username")
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 		password, err := cmd.Flags().GetString("password")
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 		//auth.UserLogin(username, password)
 		auth.RegUser(username, password)

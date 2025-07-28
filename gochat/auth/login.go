@@ -3,11 +3,12 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"gochat/user"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 func UserLogin(username string, password string) {
@@ -17,32 +18,33 @@ func UserLogin(username string, password string) {
 	}
 	userJson, err := json.Marshal(user)
 	if err != nil {
-		fmt.Println("Error encoding Json: ", err)		
+		log.Fatalf("Error encoding Json: %w", err)
 		return
 	}
-	resp, err := http.Post("http://localhost:8080/login", "application/json", bytes.NewBuffer(userJson))
+	resp, err := http.Post("http://raspberrypi.fritz.box:8080/login", "application/json", bytes.NewBuffer(userJson))
 	if err != nil {
-		fmt.Println("Error making login request", err)
+		log.Fatalf("Error making login request: %w", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading responde", err)		
+		log.Fatalf("Error reading response: %w", err)
 	}
 	dir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-	dir = dir + "/.gochat/"
-	err = os.MkdirAll(dir, 0700)
-    if err != nil {
-		fmt.Println(err)
-        return 
-    }
-	err = os.WriteFile(dir + "authToken.txt", body, 0600)
+	fileDir := filepath.Join(dir, ".gochat", username)
+	err = os.MkdirAll(fileDir, 0700)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+		return
+	}
+	filePath := filepath.Join(fileDir, "authToken.txt")
+	err = os.WriteFile(filePath, body, 0600)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
