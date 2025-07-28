@@ -5,40 +5,53 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 )
+
+//TODO: Remove ALL log.Fatalf() calls from chatserver
+//Fatalf() calls os.Exit(1), which ends the program – this is unwanted behaviour for the server. The server needs to keep running
 
 func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	fmt.Println("Authenticating at 'PublicKeyHandler'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
+	fmt.Println("...OK")
 
 	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
 	if err != nil {
-		log.Fatalf("Error extracting username from AuthToken %v", err)
+		//log.Fatalf("Error extracting username from AuthToken %v", err)
 		http.Error(w, "Error extracting username from AuthToken", http.StatusInternalServerError)
 	}
 	buf := new(strings.Builder)
 	_, err = io.Copy(buf, r.Body)
 	if err != nil {
-		log.Fatalf("Error retrieving public key from request %v", err)
+		//log.Fatalf("Error retrieving public key from request %v", err)
 		http.Error(w, "Error retrieving public key from request", http.StatusInternalServerError)
 	}
 
 	pubKey := buf.String()
 
 	key := Key{username, pubKey}
+	alreadyExists, _, err := checkIfPubKeyExists(username)
+	if err != nil {
+		//log.Fatalf("Error checking if public key already exists for user %v", err)
+		http.Error(w, "Error checking if public key already exists for user", http.StatusInternalServerError)
+	}
+	// If a user registers and creates a private/public key pair, only one public key is allowed for a user --> prevent identity theft
+	//TODO: What happens if a user misplaces/deletes the private key or changes devices. Implement a method to allow new or even multiple public keys (for multi device functionality)
+	if alreadyExists {
+		http.Error(w, "User already has a public key", http.StatusForbidden)
+	}
 	err = SavePublicKey(key)
 	if err != nil {
-		log.Fatalf("Error saving public key %v", err)
 		http.Error(w, "Error saving public key", http.StatusInternalServerError)
 	}
 }
@@ -49,13 +62,18 @@ func GetPublicKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Authenticating at 'GetPublicKey'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
+	fmt.Println("...OK")
 
 	recipient := r.PathValue("recipient")
-	_, s, _ := checkIfPubKeyExists(recipient)
+	_, s, err := checkIfPubKeyExists(recipient)
+	if err != nil {
+		http.Error(w, "Error checking for recipient's public key", http.StatusInternalServerError)
+	}
 	w.Write([]byte(s))
 
 }

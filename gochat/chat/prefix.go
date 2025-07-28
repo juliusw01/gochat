@@ -41,7 +41,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 		}
 		recipient := parts[1]
 		message := parts[2]
-		encryptedMsg, nonce, aesKey := crypto.EncryptMessage(message, username)
+		encryptedMsg, nonce, aesKey := crypto.EncryptMessage(message, username, recipient)
 		msg := Message{
 			Username: username,
 			Message:  encryptedMsg,
@@ -51,6 +51,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 			AESKey:    aesKey,
 		}
 		conn.WriteJSON(msg)
+		//TODO: return recipient here and save in variable in client.go to make it "persistent" like currentRoom
 		return 0, currentRoom
 	}
 	return -1, currentRoom

@@ -4,52 +4,34 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/zalando/go-keyring"
 )
 
-const (
-	service     = "gochat"
-	username    = "gochat-enc"
-	passwordLen = 32
-)
+//const (
+//	service     = "gochat"
+//	username    = "gochat-enc"
+//	passwordLen = 32
+//)
 
-func EncryptMessage(message string, user string) (string, string, string) {
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	dir := homeDir + "/.gochat/" + user + "/private.pem"
-
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = nil
-		privateKey, publicKey, err := GenerateRSAKeys()
-		if err != nil {
-			log.Fatalf("RSA key pair could not be generated %v", err)
-		}
-
-		passphrase := getOrCreatePassphraseFromKeychain()
-		encryptedPEM := encryptPrivateKeyToPEM(privateKey, passphrase)
-		os.WriteFile(dir, encryptedPEM, 0600)
-
-		uploadPublicKeyToServer(publicKey, user)
-	}
+func EncryptMessage(message string, user string, recipient string) (string, string, string) {
 
 	ciphertext, aesKey, nonce, err := EncryptAES(message)
 	if err != nil {
 		log.Fatalf("Could not AES encrypt message %w", err)
 	}
 
-	encryptedAESKey := encryptAESKey(aesKey)
+	encryptedAESKey := encryptAESKey(aesKey, recipient, user)
 
 	encodedCiphertext := base64.StdEncoding.EncodeToString(ciphertext)
 	encodedNonce := base64.StdEncoding.EncodeToString(nonce)
@@ -59,9 +41,66 @@ func EncryptMessage(message string, user string) (string, string, string) {
 
 }
 
-func encryptAESKey(aesKey []byte) []byte {
-	//TODO: Extract recipient's public key from server and use it to encrypt AES key here
-	return aesKey
+func encryptAESKey(aesKey []byte, recipient string, user string) []byte {
+	req, err := http.NewRequest("GET", "http://raspberrypi.fritz.box:8080/public-key/"+recipient, nil)
+
+	if err != nil {
+		log.Fatalf("Error retrieving public key for recipient %w", err)
+		return []byte("")
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println(err)
+	}
+	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
+	token, err := os.ReadFile(tokenDir)
+	if err != nil {
+		fmt.Println("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first", err)
+		return []byte("")
+	}
+	jwtToken := string(token)
+
+	req.Header.Set("Authorization", "Bearer "+jwtToken)
+	req.Header.Set("Content-Type", "application/x-pem-file")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Server responded with status: %s", resp.Status)
+	}
+
+	pubKeyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Could not read public key from response body %w", err)
+	}
+	if pubKeyBytes == nil {
+		log.Fatal("Empty response body")
+	}
+	
+	block, _ := pem.Decode(pubKeyBytes)
+	if block == nil || block.Type != "RSA PUBLIC KEY" {
+		log.Fatal("Failed to decode PEM block containing public key")
+		return []byte("")
+	}
+	pubKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
+	if err != nil {
+		log.Fatalf("Could not parse DER encoded public key %w", err)
+	}
+	//pubKey, isRSAKey := pubKeyInterface.(*rsa.PublicKey)
+	//if !isRSAKey {
+	//	log.Fatalf("Public key parsed is not an RSA public key %w", err)
+	//}
+
+	hash := sha512.New()
+	encAESKey, err := rsa.EncryptOAEP(hash, rand.Reader, pubKey, aesKey, nil)
+
+	return encAESKey
 }
 
 func getOrCreatePassphraseFromKeychain() string {
@@ -89,11 +128,21 @@ func getOrCreatePassphraseFromKeychain() string {
 
 func encryptPrivateKeyToPEM(privateKey *rsa.PrivateKey, passphrase string) []byte {
 	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-	pemBlock := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: keyBytes,
+
+	// Encrypt the PEM block using a passphrase from keyring
+	block, err := x509.EncryptPEMBlock(
+		rand.Reader,
+		"RSA PRIVATE KEY",
+		keyBytes,
+		[]byte(passphrase),
+		x509.PEMCipherAES256,
+	)
+	if err != nil {
+		log.Fatalf("Failed to encrypt private key: %v", err)
 	}
-	pemData := pem.EncodeToMemory(pemBlock)
+
+	// Encode to PEM format
+	pemData := pem.EncodeToMemory(block)
 	return pemData
 }
 
@@ -114,7 +163,8 @@ func uploadPublicKeyToServer(publicKey *rsa.PublicKey, user string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	token, err := os.ReadFile(homeDir + "/.gochat/" + user + "/authToken.txt")
+	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
+	token, err := os.ReadFile(tokenDir)
 	if err != nil {
 		fmt.Println("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first", err)
 		return

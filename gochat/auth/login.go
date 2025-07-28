@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 func UserLogin(username string, password string) {
@@ -35,13 +36,14 @@ func UserLogin(username string, password string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dir = dir + "/.gochat/" + username + "/"
-	err = os.MkdirAll(dir, 0700)
+	fileDir := filepath.Join(dir, ".gochat", username)
+	err = os.MkdirAll(fileDir, 0700)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-	err = os.WriteFile(dir+"authToken.txt", body, 0600)
+	filePath := filepath.Join(fileDir, "authToken.txt")
+	err = os.WriteFile(filePath, body, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}

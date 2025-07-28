@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -31,7 +32,8 @@ func StartClient(user string) {
 	* Bad for user experience --> instead of 'gochat chat' username has to be passed too 'gochat chat -u Chek'
 	* TODO: Either remove multi user support or find a better way
 	**/
-	token, err := os.ReadFile(homeDir + "/.gochat/" + user + "/authToken.txt")
+	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
+	token, err := os.ReadFile(tokenDir)
 	if err != nil {
 		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %w", err)
 		return
@@ -66,7 +68,7 @@ func StartClient(user string) {
 			received_in := msg.Room
 			if msg.Recipient != "" {
 				received_in = "dm"
-				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey)
+				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
 				if err != nil {
 					log.Fatalf("Message could not be decrypted %w", err)
 				}

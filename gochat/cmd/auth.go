@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"gochat/crypto"
 	"gochat/auth"
 	//"net/http"
 
@@ -24,6 +25,8 @@ var authCmd = &cobra.Command{
 			fmt.Println(err)
 		}
 		auth.UserLogin(username, password)
+		//TODO: Remove here and place it at user registration: ONLY FOR TESTING PURPOSES
+		crypto.CreateRSAPair(username)
 	},
 }
 
