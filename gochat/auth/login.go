@@ -18,19 +18,20 @@ func UserLogin(username string, password string) {
 	}
 	userJson, err := json.Marshal(user)
 	if err != nil {
-		log.Fatalf("Error encoding Json: %w", err)
+		log.Fatalf("Error encoding Json: %v", err)
 		return
 	}
+
 	resp, err := http.Post("http://raspberrypi.fritz.box:8080/login", "application/json", bytes.NewBuffer(userJson))
 	if err != nil {
-		log.Fatalf("Error making login request: %w", err)
-		return
+		//fmt.Println(resp.StatusCode)
+		log.Fatalf("Error making login request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading response: %w", err)
+		log.Fatalf("Error reading response: %v", err)
 	}
 	dir, err := os.UserHomeDir()
 	if err != nil {

@@ -82,13 +82,13 @@ func checkIfPubKeyExists(username string) (bool, string, error) {
 	// Read the JSON file
 	jsonKeys, err := os.ReadFile("data/publickey.json")
 	if err != nil {
-		return false, "", fmt.Errorf("failed to read file: %w", err)
+		return false, "", fmt.Errorf("failed to read file: %v", err)
 	}
 
 	// Unmarshal JSON into slice of Key
 	var keys []Key
 	if err := json.Unmarshal(jsonKeys, &keys); err != nil {
-		return false, "", fmt.Errorf("failed to parse JSON: %w", err)
+		return false, "", fmt.Errorf("failed to parse JSON: %v", err)
 	}
 
 	// Search for username

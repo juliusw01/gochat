@@ -28,7 +28,7 @@ func EncryptMessage(message string, user string, recipient string) (string, stri
 
 	ciphertext, aesKey, nonce, err := EncryptAES(message)
 	if err != nil {
-		log.Fatalf("Could not AES encrypt message %w", err)
+		log.Fatalf("Could not AES encrypt message %v", err)
 	}
 
 	encryptedAESKey := encryptAESKey(aesKey, recipient, user)
@@ -45,7 +45,7 @@ func encryptAESKey(aesKey []byte, recipient string, user string) []byte {
 	req, err := http.NewRequest("GET", "http://raspberrypi.fritz.box:8080/public-key/"+recipient, nil)
 
 	if err != nil {
-		log.Fatalf("Error retrieving public key for recipient %w", err)
+		log.Fatalf("Error retrieving public key for recipient %v", err)
 		return []byte("")
 	}
 
@@ -77,12 +77,12 @@ func encryptAESKey(aesKey []byte, recipient string, user string) []byte {
 
 	pubKeyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Could not read public key from response body %w", err)
+		log.Fatalf("Could not read public key from response body %v", err)
 	}
 	if pubKeyBytes == nil {
 		log.Fatal("Empty response body")
 	}
-	
+
 	block, _ := pem.Decode(pubKeyBytes)
 	if block == nil || block.Type != "RSA PUBLIC KEY" {
 		log.Fatal("Failed to decode PEM block containing public key")
@@ -90,11 +90,11 @@ func encryptAESKey(aesKey []byte, recipient string, user string) []byte {
 	}
 	pubKey, err := x509.ParsePKCS1PublicKey(block.Bytes)
 	if err != nil {
-		log.Fatalf("Could not parse DER encoded public key %w", err)
+		log.Fatalf("Could not parse DER encoded public key %v", err)
 	}
 	//pubKey, isRSAKey := pubKeyInterface.(*rsa.PublicKey)
 	//if !isRSAKey {
-	//	log.Fatalf("Public key parsed is not an RSA public key %w", err)
+	//	log.Fatalf("Public key parsed is not an RSA public key %v", err)
 	//}
 
 	hash := sha512.New()

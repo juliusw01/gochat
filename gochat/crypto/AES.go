@@ -12,23 +12,23 @@ func EncryptAES(message string) (ciphertext []byte, aesKey []byte, nonce []byte,
 	aesKey = make([]byte, 32)
 	_, err = rand.Read(aesKey)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to generate AES key: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to generate AES key: %v", err)
 	}
 
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to create AES cipher: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to create AES cipher: %v", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to create GCM: %v", err)
 	}
 
 	nonce = make([]byte, gcm.NonceSize())
 	_, err = rand.Read(nonce)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to generate nonce: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to generate nonce: %v", err)
 	}
 
 	ciphertext = gcm.Seal(nil, nonce, []byte(message), nil)
@@ -40,17 +40,17 @@ func AESDecrypt(ciphertext []byte, nonce []byte, aesKey []byte) (string, error) 
 
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
-		return "", fmt.Errorf("failed to create AES cipher: %w", err)
+		return "", fmt.Errorf("failed to create AES cipher: %v", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", fmt.Errorf("failed to create GCM: %w", err)
+		return "", fmt.Errorf("failed to create GCM: %v", err)
 	}
 
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to decrypt ciphertext to plaintext: %w", err)
+		return "", fmt.Errorf("failed to decrypt ciphertext to plaintext: %v", err)
 	}
 
 	return string(plaintext), nil

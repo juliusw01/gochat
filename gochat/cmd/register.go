@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"gochat/auth"
+	"gochat/crypto"
 	"log"
 
 	//"net/http"
@@ -26,6 +28,10 @@ var regCmd = &cobra.Command{
 		}
 		//auth.UserLogin(username, password)
 		auth.RegUser(username, password)
+		fmt.Println("Logging in...")
+		auth.UserLogin(username, password)
+		fmt.Println("Creating RSA key pair...")
+		crypto.CreateRSAPair(username)
 	},
 }
 

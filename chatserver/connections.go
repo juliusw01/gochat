@@ -37,7 +37,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	username, err := auth.ExtractUserFromToken(tokenString)
 	if err != nil {
-		fmt.Errorf("Error extracting username from token %w", err)
+		fmt.Errorf("Error extracting username from token %v", err)
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)

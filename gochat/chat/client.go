@@ -35,21 +35,21 @@ func StartClient(user string) {
 	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
 	token, err := os.ReadFile(tokenDir)
 	if err != nil {
-		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %w", err)
+		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %v", err)
 		return
 	}
 	tokenString := string(token)
 	//Eventhough we pass the username as an arg, we want to extract the username from the signed token
 	username, err := auth.ExtractUserFromToken(tokenString)
 	if err != nil {
-		log.Fatalf("User cannot be extracted from auth token: %w", err)
+		log.Fatalf("User cannot be extracted from auth token: %v", err)
 	}
 
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+tokenString)
 	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
 	if err != nil {
-		log.Fatalf("Dial error: %w", err)
+		log.Fatalf("Dial error: %v", err)
 	}
 	defer conn.Close()
 
@@ -70,7 +70,7 @@ func StartClient(user string) {
 				received_in = "dm"
 				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
 				if err != nil {
-					log.Fatalf("Message could not be decrypted %w", err)
+					log.Fatalf("Message could not be decrypted %v", err)
 				}
 			}
 			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText)

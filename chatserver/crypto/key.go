@@ -3,7 +3,6 @@ package crypto
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -25,13 +24,13 @@ func SavePublicKey(pubKey Key) error {
 
 	// Read existing data if the file exists
 	if _, err := os.Stat(filePath); err == nil {
-		data, err := ioutil.ReadFile(filePath)
+		data, err := os.ReadFile(filePath)
 		if err != nil {
 			return err
 		}
 		if len(data) > 0 {
 			if err := json.Unmarshal(data, &keys); err != nil {
-				return errors.New("existing publickey.json is not valid JSON array")
+				return errors.New("Existing publickey.json is not valid JSON array")
 			}
 		}
 	}
@@ -45,7 +44,7 @@ func SavePublicKey(pubKey Key) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(filePath, data, 0644); err != nil {
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
 		return err
 	}
 
