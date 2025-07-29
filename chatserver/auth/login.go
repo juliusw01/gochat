@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +28,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not get user from database", http.StatusUnauthorized)
 	}
 
-	//TODO: Implement actual users
-	if user.Username == actual.Username && user.Password == actual.Password {
+	if err = bcrypt.CompareHashAndPassword([]byte(actual.Password), []byte(user.Password)); err == nil {
 		tokenString, err := CreateToken(user.Username)
 		if err != nil {
 			http.Error(w, "Could not create auth token", http.StatusInternalServerError)
@@ -36,16 +37,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, tokenString)
 		return
-		//} else if user.Username == "Chek1" && user.Password == "123456" {
-		//	tokenString, err := CreateToken(user.Username)
-		//	if err != nil {
-		//		w.WriteHeader(http.StatusInternalServerError)
-		//		fmt.Errorf("No username found")
-		//	}
-		//	w.WriteHeader(http.StatusOK)
-		//	fmt.Fprint(w, tokenString)
-		//	return
 	} else {
+		//TODO: implement some sort of counter to prevent brute force attacks
 		http.Error(w, "Username or password incorrect", http.StatusUnauthorized)
 		fmt.Fprint(w, "Invalid credentials")
 	}

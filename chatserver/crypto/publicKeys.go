@@ -18,12 +18,10 @@ func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	fmt.Println("Authenticating at 'PublicKeyHandler'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
-	fmt.Println("...OK")
 
 	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
 	if err != nil {
@@ -62,12 +60,10 @@ func GetPublicKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Authenticating at 'GetPublicKey'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
-	fmt.Println("...OK")
 
 	recipient := r.PathValue("recipient")
 	_, s, err := checkIfPubKeyExists(recipient)
