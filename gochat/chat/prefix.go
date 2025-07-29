@@ -9,9 +9,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func CheckPrefix(currentRoom string, text string, username string, conn *websocket.Conn) (int, string) {
+func CheckPrefix(currentRoom string, text string, username string, conn *websocket.Conn, recipient string) (int, string, string) {
 	if strings.HasPrefix(text, "/join ") {
 		currentRoom = strings.TrimSpace(strings.TrimPrefix(text, "/join "))
+		recipient := ""
 		fmt.Printf("---------- [%s] ----------", currentRoom)
 		fmt.Printf("\n")
 		msg := Message{
@@ -21,7 +22,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 			Sent:     time.Now(),
 		}
 		conn.WriteJSON(msg)
-		return 0, currentRoom
+		return 0, currentRoom, recipient
 	}
 	if strings.HasPrefix(text, "/exit") {
 		msg := Message{
@@ -31,13 +32,14 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 			Sent:     time.Now(),
 		}
 		conn.WriteJSON(msg)
-		return 1, currentRoom
+		return 1, currentRoom, ""
 	}
 	if strings.HasPrefix(text, "/dm") {
+		currentRoom = ""
 		parts := strings.SplitN(text, " ", 3)
 		if len(parts) < 3 {
 			fmt.Println("Usage: /dm <receipient> <message>")
-			return 0, currentRoom
+			return 0, currentRoom, recipient
 		}
 		recipient := parts[1]
 		message := parts[2]
@@ -52,7 +54,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 		}
 		conn.WriteJSON(msg)
 		//TODO: return recipient here and save in variable in client.go to make it "persistent" like currentRoom
-		return 0, currentRoom
+		return 0, currentRoom, recipient
 	}
-	return -1, currentRoom
+	return -1, currentRoom, recipient
 }

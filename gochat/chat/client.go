@@ -18,11 +18,13 @@ import (
 )
 
 var rooms = make(map[string]map[*websocket.Conn]bool)
-var currentRoom string = "general"
 
 //var roomsMutex sync.Mutex
 
 func StartClient(user string) {
+	currentRoom := "general"
+	recipient := ""
+
 	reader := bufio.NewReader(os.Stdin)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -97,9 +99,9 @@ func StartClient(user string) {
 		}
 		text = strings.TrimSpace(text)
 
-		var i int
 		//TODO: Set fix prefix --> user has to set '/dm <user> <message>' every time. Treat dm's like chatrooms and save them. Prefix should only be specified when smth changes
-		i, currentRoom = CheckPrefix(currentRoom, text, username, conn)
+		var i int
+		i, currentRoom, recipient = CheckPrefix(currentRoom, text, username, conn, recipient)
 		if i == 1 {
 			fmt.Println("\nDisconnected from server.")
 			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -109,18 +111,39 @@ func StartClient(user string) {
 			continue
 		}
 
-		msg := Message{
-			Username: username,
-			Message:  text,
-			Room:     currentRoom,
-			Sent:     time.Now(),
+		if recipient != "" {
+			encryptedMsg, nonce, aesKey := crypto.EncryptMessage(text, username, recipient)
+
+			msg := Message{
+				Username:  username,
+				Message:   encryptedMsg,
+				Sent:      time.Now(),
+				Recipient: recipient,
+				Nonce:     nonce,
+				AESKey:    aesKey,
+			}
+
+			err = conn.WriteJSON(msg)
+			if err != nil {
+				log.Println("Write error:", err)
+				return
+			}
+		} else {
+			msg := Message{
+				Username:  username,
+				Message:   text,
+				Room:      currentRoom,
+				Sent:      time.Now(),
+				Recipient: recipient,
+			}
+
+			err = conn.WriteJSON(msg)
+			if err != nil {
+				log.Println("Write error:", err)
+				return
+			}
 		}
 
-		err = conn.WriteJSON(msg)
-		if err != nil {
-			log.Println("Write error:", err)
-			return
-		}
 	}
 }
 
@@ -128,7 +151,7 @@ func initMessage(conn *websocket.Conn, username string) {
 	msg := Message{
 		Username: username,
 		Message:  fmt.Sprintf("%s joined the chat.", username),
-		Room:     currentRoom,
+		Room:     "general",
 		Sent:     time.Now(),
 	}
 
