@@ -2,6 +2,7 @@ package main
 
 import (
 	"chatserver/auth"
+	"chatserver/call"
 	"chatserver/client"
 	"chatserver/crypto"
 	"fmt"
@@ -24,6 +25,7 @@ func main() {
 	http.HandleFunc("/upload/public-key", crypto.PublicKeyHandler)
 	http.HandleFunc("/public-key/{recipient}", crypto.GetPublicKey)
 	http.HandleFunc("/client", client.GetClient)
+	http.HandleFunc("/signal/call", call.CallSignalMessage)
 
 	go HandleMessages()
 
