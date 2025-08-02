@@ -10,4 +10,6 @@ type Message struct {
 	Recipient string    `json:"recipient,omitempty"`
 	Nonce     string    `json:"nonce,omitempty"`
 	AESKey    string    `json:"aesKey,omitempty"`
+	Type      string    `json:"type"` //Make type an enum
+	Payload   string    `json:"payload,omitempty"`
 }

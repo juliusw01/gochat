@@ -3,6 +3,7 @@ package main
 import (
 	"chatserver/auth"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -65,7 +66,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			clientsMutex.Lock()
 			delete(clients, conn)
 			clientsMutex.Unlock()

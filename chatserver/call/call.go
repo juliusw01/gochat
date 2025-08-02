@@ -1,3 +1,5 @@
+//TODO: Remove this class and implement in connections.go
+
 package call
 
 import (

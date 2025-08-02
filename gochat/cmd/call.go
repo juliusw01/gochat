@@ -18,8 +18,12 @@ var callCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		recipient, err := cmd.Flags().GetString("recipient")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-        call.Call(username)
+        call.Call(username, recipient)
     },
 }
 
@@ -27,4 +31,6 @@ func init() {
     rootCmd.AddCommand(callCmd)
     callCmd.Flags().StringP("username", "u", "", "Your username to be used while chatting (required)")
 	callCmd.MarkFlagRequired("username")
+	callCmd.Flags().StringP("recipient", "r", "", "The person you wish to call (required)")
+	callCmd.MarkFlagRequired("recipient")
 }

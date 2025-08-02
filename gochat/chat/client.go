@@ -99,7 +99,6 @@ func StartClient(user string) {
 		}
 		text = strings.TrimSpace(text)
 
-		//TODO: Set fix prefix --> user has to set '/dm <user> <message>' every time. Treat dm's like chatrooms and save them. Prefix should only be specified when smth changes
 		var i int
 		i, currentRoom, recipient = CheckPrefix(currentRoom, text, username, conn, recipient)
 		if i == 1 {
@@ -121,6 +120,7 @@ func StartClient(user string) {
 				Recipient: recipient,
 				Nonce:     nonce,
 				AESKey:    aesKey,
+				Type:      "chat",
 			}
 
 			err = conn.WriteJSON(msg)
@@ -130,11 +130,11 @@ func StartClient(user string) {
 			}
 		} else {
 			msg := Message{
-				Username:  username,
-				Message:   text,
-				Room:      currentRoom,
-				Sent:      time.Now(),
-				Recipient: recipient,
+				Username: username,
+				Message:  text,
+				Room:     currentRoom,
+				Sent:     time.Now(),
+				Type:     "chat",
 			}
 
 			err = conn.WriteJSON(msg)
@@ -153,6 +153,7 @@ func initMessage(conn *websocket.Conn, username string) {
 		Message:  fmt.Sprintf("%s joined the chat.", username),
 		Room:     "general",
 		Sent:     time.Now(),
+		Type:     "chat",
 	}
 
 	err := conn.WriteJSON(msg)
