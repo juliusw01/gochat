@@ -2,16 +2,14 @@ package cmd
 
 import (
 	"gochat/chat"
+	"gochat/misc"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
-	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/andybrewer/mack"
 )
 
 var (
@@ -59,22 +57,13 @@ func relaunchInBackground(user string) {
 	args := []string{"deamon", "-u", user}
 	cmd := exec.Command(exe, args...)
 
-	if runtime.GOOS != "windows" {
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		cmd.Stdin = nil
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid: true,
-		}
-	} else {
-		//cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	}
+	misc.SetBackgroundAttributes(cmd)
 
 	if err := cmd.Start(); err != nil {
 		log.Fatal("Error starting background deamon:", err)
 	}
 
-	mack.Notify("gochat deamon process started", "gochat")
+	misc.Notify("gochat deamon process started", "gochat", "", "Blow.aiff")
 
 	os.Exit(0)
 }

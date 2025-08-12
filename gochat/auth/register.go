@@ -12,8 +12,6 @@ import (
 
 func RegUser(username string, password string) {
 
-	//TODO: call function to create RSA key pair here!!!
-
 	toReg := user.NewUser(username, password)
 	userJson, err := json.Marshal(toReg)
 	if err != nil {

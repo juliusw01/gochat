@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gochat/auth"
 	"gochat/crypto"
+	"gochat/misc"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/andybrewer/mack"
 	"github.com/gorilla/websocket"
 )
 
@@ -76,7 +76,7 @@ func StartClient(user string) {
 					log.Fatalf("Message could not be decrypted %v", err)
 				}
 			}
-			mack.Notify(msg.Username + " sent you a message", "gochat")
+			misc.Notify(msg.Username+" sent you a message", "gochat", "", "Blow.aiff")
 			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText)
 		}
 	}()

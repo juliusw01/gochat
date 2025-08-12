@@ -56,7 +56,7 @@ func Call(user string, recipient string) {
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"},
 			},
-			// TODO: For maximum reliability set up TURN server here – for now this would be overkill and not necessary
+			// For maximum reliability set up TURN server here – for now this would be overkill and not necessary
 			// {
 			//     URLs:       []string{"turn:your.turn.server:3478"},
 			//     Username:   "user",
