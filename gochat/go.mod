@@ -3,15 +3,22 @@ module gochat
 go 1.23.2
 
 require (
+	github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af
+	github.com/gordonklaus/portaudio v0.0.0-20250206071425-98a94950218b
+	github.com/gorilla/websocket v1.5.3
+	github.com/hraban/opus v0.0.0-20230925203106-0188a62cb302
+	github.com/pion/webrtc/v3 v3.3.5
+	github.com/spf13/cobra v1.9.1
+	github.com/zalando/go-keyring v0.2.6
+	golang.org/x/term v0.33.0
+)
+
+require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
-	github.com/andybrewer/mack v0.0.0-20220307193339-22e922cc18af // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
-	github.com/gordonklaus/portaudio v0.0.0-20250206071425-98a94950218b // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/hraban/opus v0.0.0-20230925203106-0188a62cb302 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pion/datachannel v1.5.8 // indirect
 	github.com/pion/dtls/v2 v2.2.12 // indirect
@@ -28,13 +35,10 @@ require (
 	github.com/pion/stun v0.6.1 // indirect
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
-	github.com/pion/webrtc/v3 v3.3.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/wlynxg/anet v0.0.3 // indirect
-	github.com/zalando/go-keyring v0.2.6 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect

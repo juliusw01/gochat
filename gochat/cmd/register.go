@@ -5,6 +5,9 @@ import (
 	"gochat/auth"
 	"gochat/crypto"
 	"log"
+	"syscall"
+
+	"golang.org/x/term"
 
 	//"net/http"
 
@@ -22,11 +25,22 @@ var regCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		password, err := cmd.Flags().GetString("password")
+		fmt.Println("Please enter a password: ")
+		bytePw, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error reading password %v", err)
 		}
-		//auth.UserLogin(username, password)
+		password := string(bytePw)
+		fmt.Println("Confirm password: ")
+		byteConfirm, err := term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			log.Fatalf("Error reading password %v", err)
+		}
+		confirmPw := string(byteConfirm)
+		if confirmPw != password {
+			log.Fatalf("Passwords were not identical")
+		}
+
 		auth.RegUser(username, password)
 		fmt.Println("Logging in...")
 		auth.UserLogin(username, password)
@@ -38,7 +52,5 @@ var regCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(regCmd)
 	regCmd.Flags().StringP("username", "u", "", "Your username to be used while chatting (required)")
-	regCmd.Flags().StringP("password", "p", "", "Your password for the given user (required)")
 	regCmd.MarkFlagRequired("username")
-	regCmd.MarkFlagRequired("password")
 }

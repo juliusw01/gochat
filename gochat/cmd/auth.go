@@ -3,6 +3,11 @@ package cmd
 import (
 	//"gochat/crypto"
 	"gochat/auth"
+	"log"
+	"syscall"
+
+	"golang.org/x/term"
+
 	//"net/http"
 
 	//"github.com/gorilla/websocket"
@@ -20,20 +25,18 @@ var authCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err)
 		}
-		password, err := cmd.Flags().GetString("password")
+		fmt.Println("Please enter your password: ")
+		bytePw, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalf("Error reading password %v", err)
 		}
+		password := string(bytePw)
 		auth.UserLogin(username, password)
-		//TODO: Remove here and place it at user registration: ONLY FOR TESTING PURPOSES
-		//crypto.CreateRSAPair(username)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(authCmd)
 	authCmd.Flags().StringP("username", "u", "", "Your username to be used while chatting (required)")
-	authCmd.Flags().StringP("password", "p", "", "Your password for the given user (required)")
 	authCmd.MarkFlagRequired("username")
-	authCmd.MarkFlagRequired("password")
 }
