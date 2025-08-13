@@ -22,7 +22,7 @@ var stopCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		log.Printf("Stopping deamon for %s\n", &username)
+		log.Printf("Stopping deamon for %s\n", username)
 
 		pidFile := filepath.Join(getUserDir(username), "deamon.pid")
 

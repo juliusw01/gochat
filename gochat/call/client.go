@@ -1,7 +1,6 @@
 package call
 
 import (
-	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"gochat/auth"
@@ -10,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gordonklaus/portaudio"
@@ -44,6 +44,14 @@ func Call(user string, recipient string) {
 	}
 	defer conn.Close()
 
+	// protect concurrent writes on websocket
+	var writeMutex sync.Mutex
+	writeJSON := func(v interface{}) error {
+		writeMutex.Lock()
+		defer writeMutex.Unlock()
+		return conn.WriteJSON(v)
+	}
+
 	// === PortAudio ===
 	if err := portaudio.Initialize(); err != nil {
 		log.Fatal("PortAudio init error:", err)
@@ -53,19 +61,41 @@ func Call(user string, recipient string) {
 	// === WebRTC peer ===
 	pc, err := webrtc.NewPeerConnection(webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-			// For maximum reliability set up TURN server here – for now this would be overkill and not necessary
-			// {
-			//     URLs:       []string{"turn:your.turn.server:3478"},
-			//     Username:   "user",
-			//     Credential: "pass",
-			// },
+			{URLs: []string{"stun:stun.l.google.com:19302"}},
 		},
 	})
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// cleanup helper
+	cleanupOnce := sync.Once{}
+	cleanup := func() {
+		cleanupOnce.Do(func() {
+			log.Println("Cleaning up call resources")
+			// Close PeerConnection (this will also close tracks)
+			if pc != nil {
+				_ = pc.Close()
+			}
+			// Close websocket (deferred in caller too)
+			// conn.Close()
+			// PortAudio terminated by defer
+		})
+	}
+
+	// buffer incoming remote ICE candidates until remote description set
+	var remoteCandsMu sync.Mutex
+	var remoteCands []webrtc.ICECandidateInit
+	flushRemoteCands := func() {
+		remoteCandsMu.Lock()
+		cands := remoteCands
+		remoteCands = nil
+		remoteCandsMu.Unlock()
+		for _, c := range cands {
+			if err := pc.AddICECandidate(c); err != nil {
+				log.Println("AddICECandidate (flushed) error:", err)
+			}
+		}
 	}
 
 	// === Track (Opus audio) ===
@@ -80,24 +110,36 @@ func Call(user string, recipient string) {
 		log.Fatal(err)
 	}
 
-	// === Microphone capture ===
+	// === Microphone capture & Opus encode ===
 	in := make([]int16, 960)
 	micStream, err := portaudio.OpenDefaultStream(1, 0, 48000, len(in), &in)
 	if err != nil {
 		log.Fatal("Mic stream error:", err)
 	}
-	defer micStream.Close()
-	micStream.Start()
+	// ensure mic stream closed on cleanup
+	defer func() {
+		_ = micStream.Close()
+	}()
+	if err := micStream.Start(); err != nil {
+		log.Fatal("Mic stream start error:", err)
+	}
 
 	encoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
 	if err != nil {
 		log.Fatal("Opus encoder error:", err)
 	}
 
+	// produce encoded Opus frames and write to the local track
 	go func() {
+		defer func() {
+			_ = micStream.Stop()
+		}()
+
 		for {
 			if err := micStream.Read(); err != nil {
 				log.Println("Mic read error:", err)
+				// small sleep to avoid hot loop on persistent error
+				time.Sleep(10 * time.Millisecond)
 				continue
 			}
 
@@ -108,11 +150,15 @@ func Call(user string, recipient string) {
 				continue
 			}
 
-			err = audioTrack.WriteSample(media.Sample{
+			if n == 0 {
+				continue
+			}
+
+			if err := audioTrack.WriteSample(media.Sample{
 				Data:     encoded[:n],
 				Duration: 20 * time.Millisecond,
-			})
-			if err != nil {
+			}); err != nil {
+				// WriteSample can return ErrNotConnected if PeerConnection not connected yet — log and continue
 				log.Println("WriteSample error:", err)
 			}
 		}
@@ -123,6 +169,7 @@ func Call(user string, recipient string) {
 		if c == nil {
 			return
 		}
+		// marshal candidate object
 		candidateJSON, err := json.Marshal(c.ToJSON())
 		if err != nil {
 			log.Println("ICE candidate marshal error:", err)
@@ -135,7 +182,26 @@ func Call(user string, recipient string) {
 			Payload:   base64.StdEncoding.EncodeToString(candidateJSON),
 			Sent:      time.Now(),
 		}
-		_ = conn.WriteJSON(msg)
+		if err := writeJSON(msg); err != nil {
+			log.Println("Error sending candidate:", err)
+		}
+	})
+
+	// flush buffered remote candidates when remote description arrives
+	pc.OnSignalingStateChange(func(s webrtc.SignalingState) {
+		// when we have remote description set, flush
+		if pc.RemoteDescription() != nil {
+			flushRemoteCands()
+		}
+	})
+
+	// cleanup on connection state changes
+	pc.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
+		log.Println("PeerConnection state:", s.String())
+		if s == webrtc.PeerConnectionStateFailed || s == webrtc.PeerConnectionStateDisconnected || s == webrtc.PeerConnectionStateClosed {
+			// cleanup resources
+			cleanup()
+		}
 	})
 
 	// === Handle incoming audio ===
@@ -144,32 +210,50 @@ func Call(user string, recipient string) {
 
 		decoder, err := opus.NewDecoder(48000, 1)
 		if err != nil {
-			log.Fatal("Opus decoder error:", err)
+			log.Println("Opus decoder error:", err)
+			return
 		}
 
-		out := make([]int16, 960)
+		out := make([]int16, 960) // enough for 20ms @ 48kHz mono
 		stream, err := portaudio.OpenDefaultStream(0, 1, 48000, len(out), &out)
 		if err != nil {
-			log.Fatal("Output stream error:", err)
+			log.Println("Output stream error:", err)
+			return
 		}
-		stream.Start()
+		if err := stream.Start(); err != nil {
+			_ = stream.Close()
+			log.Println("Failed to start output stream:", err)
+			return
+		}
 
+		// read loop for track -> decode -> play
 		go func() {
-			defer stream.Close()
+			defer func() {
+				_ = stream.Stop()
+				_ = stream.Close()
+				log.Println("Output stream closed for track")
+			}()
+
 			for {
 				pkt, _, err := track.ReadRTP()
 				if err != nil {
 					log.Println("RTP read error:", err)
 					return
 				}
+
 				n, err := decoder.Decode(pkt.Payload, out)
 				if err != nil {
 					log.Println("Opus decode error:", err)
 					continue
 				}
+
+				// decoder.Decode writes PCM samples into 'out' and returns samples-per-channel count
+				// PortAudio writes the buffer pointed to by 'out' (as opened). We expect 'out' to contain valid PCM.
 				if n > 0 {
+					// PortAudio stream.Write uses the buffer we supplied on Open; since out is reused, this is safe
 					if err := stream.Write(); err != nil {
 						log.Println("PortAudio write error:", err)
+						return
 					}
 				}
 			}
@@ -183,12 +267,13 @@ func Call(user string, recipient string) {
 			err := conn.ReadJSON(&msg)
 			if err != nil {
 				log.Println("WebSocket read error:", err)
+				cleanup()
 				return
 			}
 
 			switch msg.Type {
 			case "offer":
-				//log.Println("Received offer")
+				log.Println("Received offer from", msg.Username)
 				decoded, err := base64.StdEncoding.DecodeString(msg.Payload)
 				if err != nil {
 					log.Println("Offer decode error:", err)
@@ -203,6 +288,8 @@ func Call(user string, recipient string) {
 					log.Println("Error setting remote description:", err)
 					continue
 				}
+				// flush candidates (if any) now that remote description is set
+				flushRemoteCands()
 				answer, err := pc.CreateAnswer(nil)
 				if err != nil {
 					log.Println("Error creating answer:", err)
@@ -224,14 +311,13 @@ func Call(user string, recipient string) {
 					Payload:   base64.StdEncoding.EncodeToString(answerJSON),
 					Sent:      time.Now(),
 				}
-				err = conn.WriteJSON(answerMsg)
-				if err != nil {
+				if err := writeJSON(answerMsg); err != nil {
 					log.Println("Error sending answer", err)
 					continue
 				}
 
 			case "answer":
-				//log.Println("Received answer")
+				log.Println("Received answer from", msg.Username)
 				decoded, err := base64.StdEncoding.DecodeString(msg.Payload)
 				if err != nil {
 					log.Println("Error decoding answer:", err)
@@ -242,14 +328,14 @@ func Call(user string, recipient string) {
 					log.Println("Error unmarshalling answer JSON:", err)
 					continue
 				}
-				err = pc.SetRemoteDescription(answer)
-				if err != nil {
-					log.Println("Error setting remote description", err)
+				if err := pc.SetRemoteDescription(answer); err != nil {
+					log.Println("Error setting remote description:", err)
 					continue
 				}
+				// flush any buffered remote candidates after remote description set
+				flushRemoteCands()
 
 			case "candidate":
-				//log.Println("Received ICE candidate")
 				decoded, err := base64.StdEncoding.DecodeString(msg.Payload)
 				if err != nil {
 					log.Println("Error decoding candidate:", err)
@@ -260,25 +346,26 @@ func Call(user string, recipient string) {
 					log.Println("Error unmarshalling candidate:", err)
 					continue
 				}
-				err = pc.AddICECandidate(candidate)
-				if err != nil {
-					log.Println("Error adding ICE candidate:", err)
-					continue
+				// If remote description is not set yet, buffer the candidate
+				if pc.RemoteDescription() == nil {
+					remoteCandsMu.Lock()
+					remoteCands = append(remoteCands, candidate)
+					remoteCandsMu.Unlock()
+				} else {
+					if err := pc.AddICECandidate(candidate); err != nil {
+						log.Println("Error adding ICE candidate:", err)
+					}
 				}
 			}
 		}
 	}()
 
 	// === Start call ===
-	log.Println("Press Enter to send offer...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-
 	offer, err := pc.CreateOffer(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = pc.SetLocalDescription(offer)
-	if err != nil {
+	if err := pc.SetLocalDescription(offer); err != nil {
 		log.Fatal("Error setting local description:", err)
 	}
 	offerJSON, err := json.Marshal(offer)
@@ -292,10 +379,10 @@ func Call(user string, recipient string) {
 		Payload:   base64.StdEncoding.EncodeToString(offerJSON),
 		Sent:      time.Now(),
 	}
-	err = conn.WriteJSON(msg)
-	if err != nil {
+	if err := writeJSON(msg); err != nil {
 		log.Fatal("Error sending offer:", err)
 	}
 
-	select {} // keep alive
+	// block until cleanup triggers (connection state change or errors)
+	select {}
 }

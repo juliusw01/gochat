@@ -65,6 +65,7 @@ func getUserFromDatabase(username string) (*user.User, error) {
 		}
 	}
 
+	//TODO: Add a proper data storage here. This has a time complexity of O(n), which is bad! Also uses unnecessary amount of memory
 	for i := range users {
 	if users[i].Username == username {
 		return &users[i], nil

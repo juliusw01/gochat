@@ -33,6 +33,12 @@ func UserLogin(username string, password string) {
 	if err != nil {
 		log.Fatalf("Error reading response: %v", err)
 	}
+
+	if resp.StatusCode != 200 {
+		log.Println(string(body))
+		return
+	}
+
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)

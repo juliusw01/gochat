@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"gochat/auth"
 	"gochat/crypto"
@@ -69,15 +70,18 @@ func StartClient(user string) {
 			}
 			messageText := msg.Message
 			received_in := msg.Room
-			if msg.Recipient != "" {
+			if msg.Recipient != "" && msg.Type == "chat" {
 				received_in = "dm"
 				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
 				if err != nil {
 					log.Fatalf("Message could not be decrypted %v", err)
 				}
 			}
-			misc.Notify(msg.Username+" sent you a message", "gochat", "", "Blow.aiff")
-			fmt.Printf("%s [%s][%s]: %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText)
+			if msg.Username != username {
+				misc.Notify(msg.Username+" sent you a message", "gochat", "", "Blow.aiff")
+				payload, _ := base64.StdEncoding.DecodeString(msg.Payload)
+				fmt.Printf("%s [%s][%s]: %s %s %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText, msg.Type, payload)
+			}
 		}
 	}()
 
@@ -108,6 +112,7 @@ func StartClient(user string) {
 			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			conn.Close()
 			os.Exit(0)
+
 		} else if i == 0 {
 			continue
 		}

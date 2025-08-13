@@ -30,7 +30,7 @@ var deamonCmd = &cobra.Command{
 			relaunchInBackground(username)
 		}
 
-		log.Printf("Starting deamon for %s\n", &username)
+		log.Printf("Starting deamon for %s\n", username)
 
 		pid := os.Getpid()
 		pidFile := filepath.Join(getUserDir(username), "deamon.pid")
