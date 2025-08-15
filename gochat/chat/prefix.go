@@ -20,6 +20,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 			Message:  fmt.Sprintf("%s joined the room.", username),
 			Room:     currentRoom,
 			Sent:     time.Now(),
+			Type:     "system",
 		}
 		conn.WriteJSON(msg)
 		return 0, currentRoom, recipient

@@ -19,7 +19,7 @@ var chatCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-        chat.StartClient(username)
+        chat.StartClient(username, false)
         
     },
 }

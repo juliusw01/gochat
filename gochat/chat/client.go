@@ -2,7 +2,6 @@ package chat
 
 import (
 	"bufio"
-	"encoding/base64"
 	"fmt"
 	"gochat/auth"
 	"gochat/crypto"
@@ -19,122 +18,169 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var rooms = make(map[string]map[*websocket.Conn]bool)
+var currentInput string
 
-//var roomsMutex sync.Mutex
+func StartClient(user string, detach bool) {
+	token := authenticate(user)
 
-func StartClient(user string) {
-	currentRoom := "general"
-	recipient := ""
-
-	reader := bufio.NewReader(os.Stdin)
-	homeDir, err := os.UserHomeDir()
+	username, err := auth.ExtractUserFromToken(token)
 	if err != nil {
-		log.Fatal(err)
-	}
-	/**Username is passed as an argument to support multiple accounts on one client (primarily for testing purposes)
-	* Bad for user experience --> instead of 'gochat chat' username has to be passed too 'gochat chat -u Chek'
-	* TODO: Either remove multi user support or find a better way
-	**/
-	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
-	token, err := os.ReadFile(tokenDir)
-	if err != nil {
-		log.Fatalf("Error finding authToken. Please athenticate via 'gochat authenticate -u <username> -p <password>' first: %v", err)
-		return
-	}
-	tokenString := string(token)
-	//Eventhough we pass the username as an arg, we want to extract the username from the signed token
-	username, err := auth.ExtractUserFromToken(tokenString)
-	if err != nil {
-		log.Fatalf("User cannot be extracted from auth token: %v", err)
+		log.Fatalf("Cannot extract username from token: %v", err)
 	}
 
-	header := http.Header{}
-	header.Set("Authorization", "Bearer "+tokenString)
-	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
-	if err != nil {
-		log.Fatalf("Dial error: %v", err)
-	}
-	defer conn.Close()
-
-	initMessage(conn, username)
-
-	// Receive messages in a goroutine
-	go func() {
-		for {
-			var msg Message
-			err := conn.ReadJSON(&msg)
-			if err != nil {
-				log.Println("Read error:", err)
-				return
-			}
-			messageText := msg.Message
-			received_in := msg.Room
-			if msg.Recipient != "" && msg.Type == "chat" {
-				received_in = "dm"
-				messageText, err = crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
-				if err != nil {
-					log.Fatalf("Message could not be decrypted %v", err)
-				}
-			}
-			if msg.Username != username {
-				misc.Notify(msg.Username+" sent you a message", "gochat", "", "Blow.aiff")
-				payload, _ := base64.StdEncoding.DecodeString(msg.Payload)
-				fmt.Printf("%s [%s][%s]: %s %s %s\n", msg.Sent.Format("2006-01-02 15:04:05"), received_in, msg.Username, messageText, msg.Type, payload)
-			}
-		}
-	}()
-
+	// Handle shutdown signals
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-quit
-		fmt.Println("\nDisconnected from server.")
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		conn.Close()
+		log.Println("Shutting down client...")
 		os.Exit(0)
 	}()
 
-	// Read from stdin and send
+	// Main reconnect loop for daemon mode
 	for {
-		//fmt.Print("> ")
-		text, err := reader.ReadString('\n')
+		conn, err := connectToServer(token)
 		if err != nil {
-			fmt.Println(err)
-		}
-		text = strings.TrimSpace(text)
-
-		var i int
-		i, currentRoom, recipient = CheckPrefix(currentRoom, text, username, conn, recipient)
-		if i == 1 {
-			fmt.Println("\nDisconnected from server.")
-			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			conn.Close()
-			os.Exit(0)
-
-		} else if i == 0 {
+			log.Printf("Connection failed: %v. Retrying in 5s...\n", err)
+			time.Sleep(5 * time.Second)
 			continue
 		}
 
-		if recipient != "" {
-			encryptedMsg, nonce, aesKey := crypto.EncryptMessage(text, username, recipient)
+		log.Println("Connected to server.")
+		go receiveMessages(conn, username)
+		startPingLoop(conn)
 
+		if !detach {
+			initMessage(conn, username)
+			readFromStdinAndSend(conn, username)
+			return // Exit after interactive session ends
+		} else {
+			select {} // Block forever until killed
+		}
+	}
+}
+
+func connectToServer(token string) (*websocket.Conn, error) {
+	header := http.Header{}
+	header.Set("Authorization", "Bearer "+token)
+	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func authenticate(user string) string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
+	token, err := os.ReadFile(tokenDir)
+	if err != nil {
+		log.Fatalf("Auth token not found. Please run: gochat authenticate -u <username> -p <password>")
+	}
+	return string(token)
+}
+
+func receiveMessages(conn *websocket.Conn, username string) {
+	for {
+		var msg Message
+		if err := conn.ReadJSON(&msg); err != nil {
+			log.Println("Read error:", err)
+			return
+		}
+
+		switch msg.Type {
+		case "chat":
+			handleChatMessage(msg, username)
+		case "system":
+			//TODO: Build helper function to print messages properly. Especially when more message types exist
+			fmt.Print("\r\033[K")
+			log.Printf("[SYSTEM] %s\n", msg.Message)
+			fmt.Printf("> %s", currentInput)
+		default:
+			fmt.Print("\r\033[K")
+			log.Printf("[UNKNOWN TYPE] %v\n", msg)
+			fmt.Printf("> %s", currentInput)
+		}
+	}
+}
+
+func handleChatMessage(msg Message, username string) {
+	messageText := msg.Message
+	receivedIn := msg.Room
+
+	if msg.Recipient != "" { // DM
+		receivedIn = "dm"
+		plain, err := crypto.DecryptMessage(msg.Message, msg.Nonce, msg.AESKey, username)
+		if err != nil {
+			log.Printf("Failed to decrypt message: %v\n", err)
+		} else {
+			messageText = plain
+		}
+	}
+
+	if msg.Username != username {
+		// Move cursor to start of line and clear it
+		fmt.Print("\r\033[K")
+		// Print the incoming message
+		fmt.Printf("%s [%s][%s]: %s\n",
+			msg.Sent.Local().Format("2006-01-02 15:04:05"),
+			receivedIn,
+			msg.Username,
+			messageText)
+		// Restore user input
+		fmt.Printf("> %s", currentInput)
+		misc.Notify(msg.Username + " sent you a message", "gochat", "", "Blow.aiff")
+	}
+}
+
+func readFromStdinAndSend(conn *websocket.Conn, username string) {
+	currentRoom := "general"
+	recipient := ""
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("> ")
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			log.Println("Input error:", err)
+			continue
+		}
+
+		text = strings.TrimSpace(text)
+		//TODO: currentInput must be updated on every keystroke, but it is not!
+		currentInput = ""
+		if text == "" {
+			continue // Ignore empty messages
+		}
+
+		var cmd int
+		cmd, currentRoom, recipient = CheckPrefix(currentRoom, text, username, conn, recipient)
+
+		if cmd == 1 { // Exit
+			log.Println("Disconnecting...")
+			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			conn.Close()
+			os.Exit(0)
+		} else if cmd == 0 {
+			continue // Command handled internally
+		}
+
+		if recipient != "" {
+			encrypted, nonce, aesKey := crypto.EncryptMessage(text, username, recipient)
 			msg := Message{
 				Username:  username,
-				Message:   encryptedMsg,
-				Sent:      time.Now(),
-				Recipient: recipient,
+				Message:   encrypted,
 				Nonce:     nonce,
 				AESKey:    aesKey,
+				Recipient: recipient,
+				Sent:      time.Now(),
 				Type:      "chat",
 			}
-
-			err = conn.WriteJSON(msg)
-			if err != nil {
-				log.Println("Write error:", err)
-				return
-			}
+			conn.WriteJSON(msg)
 		} else {
 			msg := Message{
 				Username: username,
@@ -143,14 +189,8 @@ func StartClient(user string) {
 				Sent:     time.Now(),
 				Type:     "chat",
 			}
-
-			err = conn.WriteJSON(msg)
-			if err != nil {
-				log.Println("Write error:", err)
-				return
-			}
+			conn.WriteJSON(msg)
 		}
-
 	}
 }
 
@@ -160,12 +200,20 @@ func initMessage(conn *websocket.Conn, username string) {
 		Message:  fmt.Sprintf("%s joined the chat.", username),
 		Room:     "general",
 		Sent:     time.Now(),
-		Type:     "chat",
+		Type:     "system",
 	}
+	conn.WriteJSON(msg)
+}
 
-	err := conn.WriteJSON(msg)
-	if err != nil {
-		log.Println("Write error:", err)
-		return
-	}
+func startPingLoop(conn *websocket.Conn) {
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+				log.Println("Ping error:", err)
+				return
+			}
+		}
+	}()
 }

@@ -26,9 +26,7 @@ var deamonCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if detach {
-			relaunchInBackground(username)
-		}
+		relaunchInBackground(username)
 
 		log.Printf("Starting deamon for %s\n", username)
 
@@ -36,16 +34,14 @@ var deamonCmd = &cobra.Command{
 		pidFile := filepath.Join(getUserDir(username), "deamon.pid")
 		os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 
-		chat.StartClient(username)
+		chat.StartClient(username, true)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deamonCmd)
 	deamonCmd.Flags().StringP("username", "u", "", "Your username to be used while chatting (required)")
-	//daemonCmd.Flags().StringVarP(&user, "user", "u", "", "Username to authenticate")
 	deamonCmd.MarkFlagRequired("username")
-	deamonCmd.Flags().BoolVar(&detach, "detach", false, "Run in background")
 }
 
 func relaunchInBackground(user string) {
