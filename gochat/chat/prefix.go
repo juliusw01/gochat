@@ -31,6 +31,7 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 			Message:  fmt.Sprintf("%s left the room.", username),
 			Room:     currentRoom,
 			Sent:     time.Now(),
+			Type:     "system",
 		}
 		conn.WriteJSON(msg)
 		return 1, currentRoom, ""
@@ -38,11 +39,19 @@ func CheckPrefix(currentRoom string, text string, username string, conn *websock
 	if strings.HasPrefix(text, "/dm") {
 		currentRoom = ""
 		parts := strings.SplitN(text, " ", 3)
-		if len(parts) < 3 {
-			fmt.Println("Usage: /dm <receipient> <message>")
+		if len(parts) < 2 {
+			fmt.Println("Usage: /dm <receipient> [<message>]")
 			return 0, currentRoom, recipient
 		}
+		if recipient != parts[1] {
+			
+		}
 		recipient := parts[1]
+		fmt.Printf("---------- [%s] ----------", recipient)
+		fmt.Printf("\n")
+		if len(parts) == 2 {
+			return 0, currentRoom, recipient
+		}
 		message := parts[2]
 		encryptedMsg, nonce, aesKey := crypto.EncryptMessage(message, username, recipient)
 		msg := Message{

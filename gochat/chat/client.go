@@ -49,10 +49,10 @@ func StartClient(user string, detach bool) {
 
 		log.Println("Connected to server.")
 		go receiveMessages(conn, username)
+		initMessage(conn, username)
 		startPingLoop(conn)
 
 		if !detach {
-			initMessage(conn, username)
 			readFromStdinAndSend(conn, username)
 			return // Exit after interactive session ends
 		} else {

@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-//TODO: Make this os independent! Deamon cannot be stopped on windows!
+//TODO: Make this os independent! Deamon cannot be stopped on windows! --> problem with syscall.Kill
 
 package cmd
 
@@ -27,7 +27,6 @@ var stopCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		log.Printf("Stopping deamon for %s\n", username)
 
 		pidFile := filepath.Join(getUserDir(username), "deamon.pid")
 
@@ -45,7 +44,7 @@ var stopCmd = &cobra.Command{
 		}
 
 		os.Remove(pidFile)
-		log.Println("Stopped deamon process for ", username)
+		log.Println("Stopped deamon process for", username)
 	},
 }
 

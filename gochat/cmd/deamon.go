@@ -13,26 +13,32 @@ import (
 )
 
 var (
-	detach bool
+	daemonized bool
 )
 
 var deamonCmd = &cobra.Command{
 	Use:   "deamon",
-	Short: "Starts deamon process to connect to chatserver for chat client",
-	//Args:  cobra.MinimumNArgs(1),
+	Short: "Starts daemon process to connect to chatserver for chat client",
 	Run: func(cmd *cobra.Command, args []string) {
 		username, err := cmd.Flags().GetString("username")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		relaunchInBackground(username)
+		// If not already daemonized, relaunch and exit
+		if !daemonized {
+			relaunchInBackground(username)
+			return
+		}
 
-		log.Printf("Starting deamon for %s\n", username)
+		// Only the daemonized process reaches here
+		log.Printf("Starting daemon for %s\n", username)
 
 		pid := os.Getpid()
 		pidFile := filepath.Join(getUserDir(username), "deamon.pid")
-		os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
+		if err := os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644); err != nil {
+			log.Printf("Error writing pid file: %v", err)
+		}
 
 		chat.StartClient(username, true)
 	},
@@ -42,6 +48,13 @@ func init() {
 	rootCmd.AddCommand(deamonCmd)
 	deamonCmd.Flags().StringP("username", "u", "", "Your username to be used while chatting (required)")
 	deamonCmd.MarkFlagRequired("username")
+
+	// Hidden flag, only used internally
+	deamonCmd.Flags().BoolVar(&daemonized, "daemonized", false, "Internal flag (do not use directly)")
+	err := deamonCmd.Flags().MarkHidden("daemonized")
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func relaunchInBackground(user string) {
@@ -50,16 +63,16 @@ func relaunchInBackground(user string) {
 		log.Fatal("Error getting executable path", err)
 	}
 
-	args := []string{"deamon", "-u", user}
+	args := []string{"deamon", "-u", user, "--daemonized"}
 	cmd := exec.Command(exe, args...)
 
 	misc.SetBackgroundAttributes(cmd)
 
 	if err := cmd.Start(); err != nil {
-		log.Fatal("Error starting background deamon:", err)
+		log.Fatal("Error starting background daemon:", err)
 	}
 
-	misc.Notify("gochat deamon process started", "gochat", "", "Blow.aiff")
+	misc.Notify("gochat daemon process started", "gochat", "", "Blow.aiff")
 
 	os.Exit(0)
 }
