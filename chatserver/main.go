@@ -24,7 +24,7 @@ func main() {
 	http.HandleFunc("/register", auth.RegHandler)
 	http.HandleFunc("/upload/public-key", crypto.PublicKeyHandler)
 	http.HandleFunc("/public-key/{recipient}", crypto.GetPublicKey)
-	http.HandleFunc("/client", client.GetClient)
+	http.HandleFunc("/client/{os}", client.GetClient)
 	http.HandleFunc("/signal/call", call.CallSignalMessage)
 
 	go HandleMessages()

@@ -36,7 +36,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Invalid token")
 		return
 	}
-	username, err := auth.ExtractUserFromToken(tokenString)
+	username, err := auth.ExtractClaimFromToken(tokenString, "username")
 	if err != nil {
 		fmt.Errorf("Error extracting username from token %v", err)
 	}

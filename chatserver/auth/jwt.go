@@ -12,37 +12,46 @@ import (
 
 var secretKey = []byte("secret-key")
 
-func CreateToken(username string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"username": username,
-			"exp":      time.Now().Add(time.Hour * 24).Unix(),
-		})
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
 
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", err
+func CreateToken(username string) (string, error) {
+	claims := &Claims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
-	return tokenString, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString(secretKey)
 }
 
 func VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
-
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid token: %w", err)
 	}
 
-	if !token.Valid {
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
 		return fmt.Errorf("invalid token")
 	}
+
+	if claims.Username == "" {
+		return fmt.Errorf("missing username claim")
+	}
+
 	return nil
 }
 
-func ExtractUserFromToken(token string) (string, error) {
+func ExtractClaimFromToken(token string, claim string) (string, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return "", fmt.Errorf("invalid token format")
@@ -64,10 +73,10 @@ func ExtractUserFromToken(token string) (string, error) {
 		return "", fmt.Errorf("error unmarshaling JSON: %v", err)
 	}
 
-	username, ok := claims["username"].(string)
+	value, ok := claims[claim].(string)
 	if !ok {
-		return "", fmt.Errorf("username claim not found or invalid")
+		return "", fmt.Errorf("claim not found or invalid")
 	}
 
-	return username, nil
+	return value, nil
 }

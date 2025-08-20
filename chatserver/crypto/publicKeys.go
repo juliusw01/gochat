@@ -23,7 +23,7 @@ func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
+	username, err := auth.ExtractClaimFromToken(r.Header.Get("Authorization"), "username")
 	if err != nil {
 		//log.Fatalf("Error extracting username from AuthToken %v", err)
 		http.Error(w, "Error extracting username from AuthToken", http.StatusInternalServerError)

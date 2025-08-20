@@ -1,3 +1,8 @@
+//go:build darwin
+// +build darwin
+
+//TODO: Make this os independent! Portaudio is only for mac --> calls are not working on different os
+
 package call
 
 import (

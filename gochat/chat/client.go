@@ -64,8 +64,12 @@ func StartClient(user string, detach bool) {
 func connectToServer(token string) (*websocket.Conn, error) {
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+token)
-	conn, _, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
+	conn, resp, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
 	if err != nil {
+		if resp.StatusCode == http.StatusUnauthorized {
+			log.Fatalf("Invalid access token %v", resp.Status)
+		}
+		fmt.Println(resp.Status)
 		return nil, err
 	}
 	return conn, nil

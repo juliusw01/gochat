@@ -1,6 +1,10 @@
 Welcome to gochat
 
-Start the gochat client to chat with other users in chatrooms or in 1:1 chats. The client can be downloaded at http://raspberrypi.fritz.box:8080/client
+Start the gochat client to chat with other users in chatrooms or in 1:1 chats. The client can be downloaded for the respective operating system at 
+
+- http://raspberrypi.fritz.box:8080/client/linux
+- http://raspberrypi.fritz.box:8080/client/mac
+- http://raspberrypi.fritz.box:8080/client/windows
 
 The client can be started with './gochat' and takes several arguments. To see the list of arguments gochat takes, run 'gochat --help'.
 
@@ -11,4 +15,4 @@ In order to start chatting with other users, run 'gochat chat -u <username>'. Cu
 By default all users will be added to the 'general' chat room. Chat rooms can be switched between by typing '/join <room>'. If the room does not yet exist, it will be created. 
 In order to start sending direct messages to users, type '/dm <recipient>'. 
 
-gochat also supports calls, although that feature is not yet fully implemented and currently only experimental.
+gochat also supports calls, although that feature is not yet fully implemented and currently only experimental for mac – full feature coming soon.

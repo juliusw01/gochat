@@ -1,3 +1,8 @@
+//go:build !windows
+// +build !windows
+
+//TODO: Make this os independent! Deamon cannot be stopped on windows!
+
 package cmd
 
 import (
