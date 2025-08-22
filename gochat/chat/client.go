@@ -4,24 +4,25 @@ import (
 	"bufio"
 	"fmt"
 	"gochat/auth"
+	"gochat/call"
+	"gochat/connections"
 	"gochat/crypto"
 	"gochat/misc"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/andybrewer/mack"
 	"github.com/gorilla/websocket"
 )
 
 var currentInput string
 
 func StartClient(user string, detach bool) {
-	token := authenticate(user)
+	token := connections.Authenticate(user)
 
 	username, err := auth.ExtractUserFromToken(token)
 	if err != nil {
@@ -40,7 +41,7 @@ func StartClient(user string, detach bool) {
 
 	// Main reconnect loop for daemon mode
 	for {
-		conn, err := connectToServer(token)
+		conn, err := connections.ConnectToServer(token)
 		if err != nil {
 			log.Printf("Connection failed: %v. Retrying in 5s...\n", err)
 			time.Sleep(5 * time.Second)
@@ -61,36 +62,10 @@ func StartClient(user string, detach bool) {
 	}
 }
 
-func connectToServer(token string) (*websocket.Conn, error) {
-	header := http.Header{}
-	header.Set("Authorization", "Bearer "+token)
-	conn, resp, err := websocket.DefaultDialer.Dial("ws://raspberrypi.fritz.box:8080/ws", header)
-	if err != nil {
-		if resp.StatusCode == http.StatusUnauthorized {
-			log.Fatalf("Invalid access token %v", resp.Status)
-		}
-		fmt.Println(resp.Status)
-		return nil, err
-	}
-	return conn, nil
-}
-
-func authenticate(user string) string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	tokenDir := filepath.Join(homeDir, ".gochat", user, "authToken.txt")
-	token, err := os.ReadFile(tokenDir)
-	if err != nil {
-		log.Fatalf("Auth token not found. Please run: gochat authenticate -u <username> -p <password>")
-	}
-	return string(token)
-}
-
 func receiveMessages(conn *websocket.Conn, username string) {
+	fmt.Println("Start receiving messages...")
 	for {
-		var msg Message
+		var msg call.Message
 		if err := conn.ReadJSON(&msg); err != nil {
 			log.Println("Read error:", err)
 			return
@@ -104,6 +79,34 @@ func receiveMessages(conn *websocket.Conn, username string) {
 			fmt.Print("\r\033[K")
 			log.Printf("[SYSTEM] %s\n", msg.Message)
 			fmt.Printf("> %s", currentInput)
+		case "offer", "answer", "candidate":
+			sess := getOrCreateCallSession(username, msg.Username, conn)
+			if sess == nil {
+				log.Println("Failed to get or create call session")
+				continue
+			}
+			if msg.Type == "offer" {
+				//misc.Notify(msg.Username + " wants to call you", "gochat", "", "Blow.aiff")
+				alert := mack.AlertOptions{
+					Title:         "gochat",
+					Message:       msg.Username + " is calling you",
+					Duration:      15,
+					Buttons:       "Yes, No",
+					DefaultButton: "Yes",
+				}
+				resp, err := mack.AlertBox(alert)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if resp.Clicked == "Yes" {
+					misc.Notify("Call accepted", "gochat", "", "Blow.aiff")
+					sess.AcceptCall()
+				} else {
+					continue
+				}
+			}
+			sess.HandleSignalMessage(msg)
 		default:
 			fmt.Print("\r\033[K")
 			log.Printf("[UNKNOWN TYPE] %v\n", msg)
@@ -112,7 +115,7 @@ func receiveMessages(conn *websocket.Conn, username string) {
 	}
 }
 
-func handleChatMessage(msg Message, username string) {
+func handleChatMessage(msg call.Message, username string) {
 	messageText := msg.Message
 	receivedIn := msg.Room
 
@@ -137,7 +140,7 @@ func handleChatMessage(msg Message, username string) {
 			messageText)
 		// Restore user input
 		fmt.Printf("> %s", currentInput)
-		misc.Notify(msg.Username + " sent you a message", "gochat", "", "Blow.aiff")
+		misc.Notify(msg.Username+" sent you a message", "gochat", "", "Blow.aiff")
 	}
 }
 
@@ -175,7 +178,7 @@ func readFromStdinAndSend(conn *websocket.Conn, username string) {
 
 		if recipient != "" {
 			encrypted, nonce, aesKey := crypto.EncryptMessage(text, username, recipient)
-			msg := Message{
+			msg := call.Message{
 				Username:  username,
 				Message:   encrypted,
 				Nonce:     nonce,
@@ -186,7 +189,7 @@ func readFromStdinAndSend(conn *websocket.Conn, username string) {
 			}
 			conn.WriteJSON(msg)
 		} else {
-			msg := Message{
+			msg := call.Message{
 				Username: username,
 				Message:  text,
 				Room:     currentRoom,
@@ -199,7 +202,7 @@ func readFromStdinAndSend(conn *websocket.Conn, username string) {
 }
 
 func initMessage(conn *websocket.Conn, username string) {
-	msg := Message{
+	msg := call.Message{
 		Username: username,
 		Message:  fmt.Sprintf("%s joined the chat.", username),
 		Room:     "general",
