@@ -3,8 +3,8 @@ package call
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"gochat/connections"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -45,8 +45,17 @@ func NewCallSession(user string, conn *websocket.Conn, recipient string) (*CallS
 	}
 
 	// Debug logging for connection state
-	pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-	    log.Println("PeerConnection state:", state)
+	pc.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
+		log.Println("PC state:", s)
+	})
+	pc.OnICEConnectionStateChange(func(s webrtc.ICEConnectionState) {
+		log.Println("ICE state:", s)
+	})
+	//pc.OnICEGatheringStateChange(func(s webrtc.ICEGatheringState) {
+	//    log.Println("ICE gathering:", s)
+	//})
+	pc.OnSignalingStateChange(func(s webrtc.SignalingState) {
+		log.Println("Signaling state:", s)
 	})
 
 	sess := &CallSession{
@@ -92,7 +101,11 @@ func (s *CallSession) StartCall(recipient string) error {
 		return err
 	}
 
-	offerJSON, _ := json.Marshal(offer)
+	offerJSON, err := json.Marshal(offer)
+	if err != nil {
+		log.Println("Error marhalling offer: %v", err)
+		return err
+	}
 	msg := Message{
 		Username:  s.User,
 		Type:      "offer",
@@ -207,7 +220,9 @@ func (s *CallSession) setupICE(recipient string) {
 		fmt.Println("Candidate sent!")
 		if err := s.writeJSON(msg); err != nil {
 			log.Println("Error sending candidate:", err)
+			return
 		}
+		fmt.Println("Candidate sent!")
 	})
 }
 
@@ -218,15 +233,24 @@ func (s *CallSession) setupAudio() {
 	}
 
 	// Track for microphone
-	audioTrack, _ := webrtc.NewTrackLocalStaticSample(
+	audioTrack, err := webrtc.NewTrackLocalStaticSample(
 		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus}, "audio", "pion",
 	)
+	if err != nil {
+		log.Println(err)
+	}
 	s.Peer.AddTrack(audioTrack)
 
 	// Microphone capture
 	in := make([]int16, 960)
-	micStream, _ := portaudio.OpenDefaultStream(1, 0, 48000, len(in), &in)
-	encoder, _ := opus.NewEncoder(48000, 1, opus.AppVoIP)
+	micStream, err := portaudio.OpenDefaultStream(1, 0, 48000, len(in), &in)
+	if err != nil {
+		log.Println("Error opening default stream:", err)
+	}
+	encoder, err := opus.NewEncoder(48000, 1, opus.AppVoIP)
+	if err != nil {
+		log.Println("Error encoding mic input:", err)
+	}
 
 	micStream.Start()
 	go func() {
