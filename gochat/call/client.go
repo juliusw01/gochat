@@ -26,6 +26,14 @@ type CallSession struct {
 	remoteCandsMu sync.Mutex
 }
 
+//TODO: Fix call feature/webRTC flow
+/**
+* webRTC offer/answer/candidate are recieved in chat.receiveMessages(), but sent via a different websocket connection in this file.
+* Because of those two websockets, the caller will never recieve/read the answer from the callee, which means no connection will ever establish
+* Either use the "chat-websocket" to send offer/answer/candidate messages and remove the websocket connection from call package,
+* OR separate the offer/answer/candidate messages completely from the chat package and move all logic here
+**/
+
 // --- Constructor ---
 func NewCallSession(user string, conn *websocket.Conn, recipient string) (*CallSession, error) {
 	var writeMutex sync.Mutex
