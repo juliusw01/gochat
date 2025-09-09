@@ -196,6 +196,10 @@ func readFromStdinAndSend(conn *websocket.Conn, username string) {
 				Sent:     time.Now(),
 				Type:     "chat",
 			}
+			//TODO: Also encrypt group messages!
+			/*
+			* Get all members and their public key in a chat room from the server and encrypt the AES key with every public key
+			*/
 			conn.WriteJSON(msg)
 		}
 	}

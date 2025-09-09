@@ -25,12 +25,14 @@ func NewUser(username string, password string) User {
 }
 
 func SaveUser(user User) error {
+	//TODO: CHECK IF THE USER ALREADY EXISTS!!!!
 	filePath := "data/users.json"
 
 	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 		return err
 	}
 
+	//TODO: Don't just hash passwords and save them – add a salt!
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err

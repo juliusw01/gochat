@@ -16,6 +16,12 @@ var (
 	daemonized bool
 )
 
+/*
+* This will start a deamon process that keeps a connection to the server.
+* This enables users to recieve messages and calls even when they are not 
+* actively using the application.
+*/
+
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Starts daemon process to connect to chatserver for chat client",
