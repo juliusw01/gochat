@@ -3,6 +3,7 @@ package main
 import (
 	"chatserver/auth"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -35,9 +36,9 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Invalid token")
 		return
 	}
-	username, err := auth.ExtractUserFromToken(tokenString)
+	username, err := auth.ExtractClaimFromToken(tokenString, "username")
 	if err != nil {
-		fmt.Errorf("Error extracting username from token %w", err)
+		fmt.Errorf("Error extracting username from token %v", err)
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -65,7 +66,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		var msg Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			clientsMutex.Lock()
 			delete(clients, conn)
 			clientsMutex.Unlock()

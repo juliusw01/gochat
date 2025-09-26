@@ -1,11 +1,12 @@
 package main
 
 import (
+	"chatserver/auth"
+	"chatserver/call"
+	"chatserver/client"
+	"chatserver/crypto"
 	"fmt"
 	"net/http"
-	"chatserver/auth"
-	"chatserver/crypto"
-
 
 	"github.com/gorilla/websocket"
 )
@@ -23,7 +24,8 @@ func main() {
 	http.HandleFunc("/register", auth.RegHandler)
 	http.HandleFunc("/upload/public-key", crypto.PublicKeyHandler)
 	http.HandleFunc("/public-key/{recipient}", crypto.GetPublicKey)
-
+	http.HandleFunc("/client/{os}", client.GetClient)
+	http.HandleFunc("/signal/call", call.CallSignalMessage)
 
 	go HandleMessages()
 

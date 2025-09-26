@@ -18,14 +18,12 @@ func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	fmt.Println("Authenticating at 'PublicKeyHandler'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
-	fmt.Println("...OK")
 
-	username, err := auth.ExtractUserFromToken(r.Header.Get("Authorization"))
+	username, err := auth.ExtractClaimFromToken(r.Header.Get("Authorization"), "username")
 	if err != nil {
 		//log.Fatalf("Error extracting username from AuthToken %v", err)
 		http.Error(w, "Error extracting username from AuthToken", http.StatusInternalServerError)
@@ -62,12 +60,10 @@ func GetPublicKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Authenticating at 'GetPublicKey'...")
 	err := auth.Authenticate(w, r)
 	if err != nil {
 		return
 	}
-	fmt.Println("...OK")
 
 	recipient := r.PathValue("recipient")
 	_, s, err := checkIfPubKeyExists(recipient)
@@ -82,13 +78,13 @@ func checkIfPubKeyExists(username string) (bool, string, error) {
 	// Read the JSON file
 	jsonKeys, err := os.ReadFile("data/publickey.json")
 	if err != nil {
-		return false, "", fmt.Errorf("failed to read file: %w", err)
+		return false, "", fmt.Errorf("failed to read file: %v", err)
 	}
 
 	// Unmarshal JSON into slice of Key
 	var keys []Key
 	if err := json.Unmarshal(jsonKeys, &keys); err != nil {
-		return false, "", fmt.Errorf("failed to parse JSON: %w", err)
+		return false, "", fmt.Errorf("failed to parse JSON: %v", err)
 	}
 
 	// Search for username

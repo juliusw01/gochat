@@ -3,12 +3,12 @@ package auth
 import (
 	"chatserver/user"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
 )
 
-func RegHandler(w http.ResponseWriter, r *http.Request){
+func RegHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -23,9 +23,20 @@ func RegHandler(w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Username cannot be admin", http.StatusForbidden)
 		return
 	}
-	
+
+	existingUser, err := getUserFromDatabase(newUser.Username)
+	if existingUser != nil {
+		http.Error(w, "User already exists. Please select a different username", http.StatusConflict)
+		return
+	}
+	if err != nil {
+		log.Println("Error saving user.", err)
+		http.Error(w, "User could not be saved", http.StatusInternalServerError)
+		return
+	}
+
 	if err := user.SaveUser(newUser); err != nil {
-		fmt.Println("Error saving user.", err)
+		log.Println("Error saving user.", err)
 		http.Error(w, "User could not be saved", http.StatusInternalServerError)
 		return
 	}

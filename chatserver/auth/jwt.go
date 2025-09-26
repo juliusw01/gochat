@@ -1,48 +1,57 @@
 package auth
 
 import (
-	"fmt"
-	"time"
 	"encoding/base64"
-    "encoding/json"
-    "strings"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var secretKey = []byte("secret-key")
 
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
 func CreateToken(username string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, 
-        jwt.MapClaims{ 
-        "username": username, 
-        "exp": time.Now().Add(time.Hour * 24).Unix(), 
-        })
+	claims := &Claims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
 
-    tokenString, err := token.SignedString(secretKey)
-    if err != nil {
-    	return "", err
-    }
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return tokenString, nil
+	return token.SignedString(secretKey)
 }
 
 func VerifyToken(tokenString string) error {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-	   return secretKey, nil
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
 	})
-
 	if err != nil {
-	   return err
+		return fmt.Errorf("invalid token: %w", err)
 	}
 
-	if !token.Valid {
-	   return fmt.Errorf("invalid token")
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return fmt.Errorf("invalid token")
 	}
+
+	if claims.Username == "" {
+		return fmt.Errorf("missing username claim")
+	}
+
 	return nil
 }
 
-func ExtractUserFromToken(token string) (string, error){
+func ExtractClaimFromToken(token string, claim string) (string, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return "", fmt.Errorf("invalid token format")
@@ -51,23 +60,23 @@ func ExtractUserFromToken(token string) (string, error){
 	payload := parts[1]
 
 	if m := len(payload) % 4; m != 0 {
-        payload += strings.Repeat("=", 4-m)
-    }
+		payload += strings.Repeat("=", 4-m)
+	}
 
-    decoded, err := base64.URLEncoding.DecodeString(payload)
-    if err != nil {
-        return "", fmt.Errorf("error decoding payload: %w", err)
-    }
+	decoded, err := base64.URLEncoding.DecodeString(payload)
+	if err != nil {
+		return "", fmt.Errorf("error decoding payload: %v", err)
+	}
 
-    var claims map[string]interface{}
-    if err := json.Unmarshal(decoded, &claims); err != nil {
-        return "", fmt.Errorf("error unmarshaling JSON: %w", err)
-    }
+	var claims map[string]interface{}
+	if err := json.Unmarshal(decoded, &claims); err != nil {
+		return "", fmt.Errorf("error unmarshaling JSON: %v", err)
+	}
 
-    username, ok := claims["username"].(string)
-    if !ok {
-        return "", fmt.Errorf("username claim not found or invalid")
-    }
+	value, ok := claims[claim].(string)
+	if !ok {
+		return "", fmt.Errorf("claim not found or invalid")
+	}
 
-    return username, nil
+	return value, nil
 }

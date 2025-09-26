@@ -2,8 +2,12 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
+	"path/filepath"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -21,17 +25,42 @@ func NewUser(username string, password string) User {
 }
 
 func SaveUser(user User) error {
-	data, err := json.MarshalIndent(user, "", " ")
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile("data/users.json", os.O_APPEND, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+	//TODO: CHECK IF THE USER ALREADY EXISTS!!!!
+	filePath := "data/users.json"
 
-	if _, err := f.Write(data); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+		return err
+	}
+
+	//TODO: Don't just hash passwords and save them – add a salt!
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hashedPassword)
+
+	var users []User
+
+	if _, err := os.Stat(filePath); err == nil {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return err
+		}
+		if len(data) > 0 {
+			if err := json.Unmarshal(data, &users); err != nil {
+				return errors.New("Existing users.json is not a valid JSON array")
+			}
+		}
+	}
+
+	users = append(users, user)
+
+	data, err := json.MarshalIndent(users, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
 		return err
 	}
 

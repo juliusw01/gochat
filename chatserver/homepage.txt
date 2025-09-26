@@ -1,4 +1,18 @@
 Welcome to gochat
 
---> some documentation
+Start the gochat client to chat with other users in chatrooms or in 1:1 chats. The client can be downloaded for the respective operating system at 
 
+- http://raspberrypi.fritz.box:8080/client/linux
+- http://raspberrypi.fritz.box:8080/client/mac
+- http://raspberrypi.fritz.box:8080/client/windows
+
+The client can be started with './gochat' and takes several arguments. To see the list of arguments gochat takes, run 'gochat --help'.
+
+To start chatting/calling other users, a user account is needed. To create a new user, run 'gochat register -u <username> -p <password>'. This will create a new user, with an RSA key pair that will be used for end to end encryption. Therefore making it impossible for the server to read sent messages (currently only for direct messages). Registering a new user will also automatically log the user in to start chatting calling.
+If the login has expired users need to log in again. That can be done by running 'gochat authenticate -u <username> -p <password>'. Authenticating at the server will return a signed JSON web token to the client used to authenticate at the server.
+
+In order to start chatting with other users, run 'gochat chat -u <username>'. Currently the username flag is necessary to support multi user support.
+By default all users will be added to the 'general' chat room. Chat rooms can be switched between by typing '/join <room>'. If the room does not yet exist, it will be created. 
+In order to start sending direct messages to users, type '/dm <recipient>'. 
+
+gochat also supports calls, although that feature is not yet fully implemented and currently only experimental for mac – full feature coming soon.
