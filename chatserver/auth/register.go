@@ -24,14 +24,9 @@ func RegHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existingUser, err := getUserFromDatabase(newUser.Username)
+	existingUser, _ := getUserFromDatabase(newUser.Username)
 	if existingUser != nil {
 		http.Error(w, "User already exists. Please select a different username", http.StatusConflict)
-		return
-	}
-	if err != nil {
-		log.Println("Error saving user.", err)
-		http.Error(w, "User could not be saved", http.StatusInternalServerError)
 		return
 	}
 
